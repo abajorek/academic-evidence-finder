@@ -1,0 +1,89 @@
+categories:
+  Teaching:
+    Syllabi:
+      any:
+        - "\\bsyllabus\\b"
+        - "course description"
+        - "attendance policy"
+        - "learning outcome(s?)"
+        - "grading scale"
+    Assignments & Rubrics:
+      any:
+        - "\\bassignment\\b"
+        - "\\brubric\\b"
+        - "points possible"
+        - "submission instructions"
+    Assessment/Evals:
+      any:
+        - "student evaluation of teaching"
+        - "\\bSET\\b"
+        - "IDEA survey"
+        - "course evaluation"
+        - "Brightspace|D2L|Canvas export"
+    Advising/Recruitment:
+      any:
+        - "\\badvis(ing|or)\\b"
+        - "recruitment"
+        - "audition"
+        - "marching band registration"
+    Course Materials:
+      any:
+        - "\\blecture\\b"
+        - "\\bslides?\\b"
+        - "\\bquiz\\b"
+        - "\\banswer key\\b"
+        - "lesson plan"
+
+  Service:
+    Committees:
+      any:
+        - "\\bcommittee\\b"
+        - "agenda"
+        - "minutes"
+        - "motion carried"
+    Events & Outreach:
+      any:
+        - "parents'? weekend"
+        - "\\balumni\\b"
+        - "\\bopen house\\b"
+        - "community outreach"
+        - "hosting/judging"
+    Administration:
+      any:
+        - "assessment report"
+        - "program review"
+        - "budget request"
+        - "scheduling"
+        - "inventory"
+
+  Scholarship:
+    Publications:
+      any:
+        - "\\bdoi:\\s*10\\."
+        - "\\bISSN\\b"
+        - "manuscript submitted"
+        - "\\breferences\\b"
+        - "accepted for publication"
+    Presentations:
+      any:
+        - "\\bconference\\b"
+        - "\\babstract\\b"
+        - "\\bprogram\\b"
+        - "\\bposter\\b"
+        - "\\bproceedings\\b"
+    Grants/IRB:
+      any:
+        - "\\bIRB\\b"
+        - "\\bprotocol\\b"
+        - "\\bgrant\\b"
+        - "budget justification"
+        - "scope of work"
+
+file_filters:
+  include_extensions: [".pdf", ".docx", ".pptx", ".txt"]
+  exclude_dirs: [".git", "node_modules", "__pycache__", ".venv"]
+
+scoring:
+  # Each match contributes points; higher = stronger evidence
+  per_hit_points: 1
+  cap_per_file: 10
