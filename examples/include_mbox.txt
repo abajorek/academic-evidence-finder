@@ -2,3 +2,4 @@
 ~/Downloads/Inbox.mbox
 ~/Downloads/Sent.mbox
 ~/Downloads/Scholarship.mbox
+./examples/sample.mbox
