@@ -1,16 +1,36 @@
-import argparse, os, re, time, yaml, mailbox, chardet
+import argparse, os, re, yaml, mailbox
 from pathlib import Path
-from tqdm import tqdm
-from dateutil import parser as dateparser
-from icalendar import Calendar
-from extractors import extract_text
-from report import write_csv, write_summary, write_html
 from datetime import datetime, timezone
+from dateutil import parser as dtparse
+from icalendar import Calendar
+from bs4 import BeautifulSoup
+
+from report import write_csv, write_summary, write_html
+from extractors import extract_text
+
+# ---------- helpers ----------
 
 def to_epoch(dstr):
-    if not dstr: return None
+    if not dstr: 
+        return None
     return datetime.strptime(dstr, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()
 
+def iso_date_from_epoch(ts: float) -> str:
+    return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+
+def read_lines_file(path):
+    if not path: 
+        return []
+    with open(path, "r") as f:
+        return [ln.strip() for ln in f if ln.strip() and not ln.strip().startswith("#")]
+
+def load_path_list(path):
+    if not path or not os.path.exists(path): 
+        return []
+    with open(path, "r") as f:
+        return [ln.strip() for ln in f if ln.strip()]
+
+# ---------- rules ----------
 
 def load_rules(path):
     with open(path, "r") as f:
@@ -19,23 +39,36 @@ def load_rules(path):
     for cat, subs in cfg["categories"].items():
         compiled[cat] = {}
         for sub, rule in subs.items():
-            pats = [re.compile(pat, re.IGNORECASE) for pat in rule.get("any", [])]
+            pats = [re.compile(p, re.IGNORECASE) for p in rule.get("any", [])]
             compiled[cat][sub] = pats
-    return cfg, compiled
+    scoring = cfg.get("scoring", {})
+    per_hit = int(scoring.get("per_hit_points", 1))
+    cap = int(scoring.get("cap_per_file", 10))
+    cat_w = scoring.get("category_weights", {}) or {}
+    bonus = scoring.get("bonus_keywords", {}) or {}
+    # normalize bonus if it was accidentally a list like ["key: val", ...]
+    if isinstance(bonus, list):
+        m = {}
+        for item in bonus:
+            if isinstance(item, str) and ":" in item:
+                k, v = item.split(":", 1)
+                try:
+                    m[k.strip()] = float(v.strip())
+                except Exception:
+                    pass
+        bonus = m
+    return cfg, compiled, per_hit, cap, cat_w, bonus
 
-def score_text(text, patterns, per_hit_points, cap):
+def score_text(text, pats, per_hit, cap):
+    if not text:
+        return 0, 0
     hits = 0
-    for pat in patterns:
+    for pat in pats:
         hits += len(set(m.span() for m in pat.finditer(text)))
-    return min(hits * per_hit_points, cap), hits
+    return min(hits * per_hit, cap), hits
 
-def load_list_file(path):
-    if not path:
-        return []
-    with open(path, "r") as f:
-        return [os.path.expanduser(line.strip()) for line in f if line.strip() and not line.strip().startswith("#")]
+# ---------- walkers ----------
 
-# --- replace your walk_files() with this date/size-aware generator ---
 def walk_files(include_dirs, include_exts, exclude_dirs, since_ts=None, until_ts=None, max_bytes=0):
     for root in include_dirs:
         for dirpath, dirnames, filenames in os.walk(root):
@@ -54,202 +87,227 @@ def walk_files(include_dirs, include_exts, exclude_dirs, since_ts=None, until_ts
                 mt = st.st_mtime
                 if since_ts and mt < since_ts:
                     continue
-                if until_ts and mt > until_ts + 86399:  # make 'until' inclusive through end of day
+                if until_ts and mt > until_ts + 86399:  # inclusive end-of-day
                     continue
                 yield path
 
-def safe_decode(b):
-    if isinstance(b, str):
-        return b
-    if not b:
-        return ""
-    guess = chardet.detect(b).get("encoding") or "utf-8"
-    try:
-        return b.decode(guess, errors="replace")
-    except Exception:
-        return b.decode("utf-8", errors="replace")
+# ---------- sources ----------
 
-def ics_events_from_file(path):
-    try:
-        with open(path, "rb") as f:
-            cal = Calendar.from_ical(f.read())
-    except Exception:
-        return []
-    events = []
-    for comp in cal.walk():
-        if comp.name == "VEVENT":
-            summary = safe_decode(comp.get("summary", ""))
-            desc = safe_decode(comp.get("description", ""))
-            loc = safe_decode(comp.get("location", ""))
-            dtstart = comp.get("dtstart")
-            when = ""
-            if dtstart:
+def iter_ics(paths):
+    for path in paths:
+        try:
+            with open(path, "rb") as f:
+                cal = Calendar.from_ical(f.read())
+            for comp in cal.walk():
+                if comp.name != "VEVENT":
+                    continue
+                subj = comp.get("summary")
+                desc = comp.get("description")
+                loc = comp.get("location")
+                start = comp.get("dtstart")
+                txt = "\n".join([str(subj or ""), str(desc or ""), str(loc or "")])
+                when = ""
                 try:
-                    dt = dtstart.dt
-                    when = str(dt)
+                    dt = start.dt
+                    when = (dt.date().isoformat() if hasattr(dt, "date") else str(dt)[:10])
                 except Exception:
-                    when = ""
-            txt = " ".join([summary or "", desc or "", loc or ""]).strip()
-            events.append({
-                "display": summary or os.path.basename(path),
-                "text": f"{summary}\n{desc}\n{loc}",
-                "meta": f"{when}{' • ' + loc if loc else ''}",
-            })
-    return events
+                    pass
+                meta = " • ".join([str(start.dt) if start else "", str(loc or "")]).strip(" •")
+                yield {"display": str(subj or "(no title)"), "text": txt, "when": when, "meta": meta}
+        except Exception:
+            continue
 
-def mbox_messages_from_file(path):
-    msgs = []
-    try:
-        mbox = mailbox.mbox(path)
-    except Exception:
-        return msgs
-    for msg in mbox:
-        subject = msg.get("subject", "")
-        from_ = msg.get("from", "")
-        to = msg.get("to", "")
-        date = msg.get("date", "")
-        # extract body (prefer text/plain)
-        body = ""
-        if msg.is_multipart():
-            for part in msg.walk():
-                ct = (part.get_content_type() or "").lower()
-                if ct == "text/plain":
-                    try:
-                        body = safe_decode(part.get_payload(decode=True))
-                        break
-                    except Exception:
-                        pass
-        else:
+def iter_mbox(paths):
+    for path in paths:
+        try:
+            mbox = mailbox.mbox(path)
+        except Exception:
+            continue
+        for msg in mbox:
+            subj = msg.get("subject", "") or ""
+            frm = msg.get("from", "") or ""
+            to  = msg.get("to", "") or ""
+            date = msg.get("date", "") or ""
+            # body
+            body = ""
             try:
-                body = safe_decode(msg.get_payload(decode=True))
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        ct = (part.get_content_type() or "").lower()
+                        if ct == "text/plain":
+                            body = part.get_payload(decode=True) or b""
+                            body = body.decode(errors="ignore")
+                            break
+                        elif ct == "text/html" and not body:
+                            htmlb = part.get_payload(decode=True) or b""
+                            body = BeautifulSoup(htmlb.decode(errors="ignore"), "lxml").get_text(" ", strip=True)
+                else:
+                    ct = (msg.get_content_type() or "").lower()
+                    if ct == "text/plain":
+                        body = (msg.get_payload(decode=True) or b"").decode(errors="ignore")
+                    elif ct == "text/html":
+                        htmlb = msg.get_payload(decode=True) or b""
+                        body = BeautifulSoup(htmlb.decode(errors="ignore"), "lxml").get_text(" ", strip=True)
             except Exception:
-                body = str(msg.get_payload())
-        text = "\n".join([subject or "", from_ or "", to or "", body or ""])
-        meta = []
-        if date:
+                pass
+            text = "\n".join([subj, frm, to, body])
+            when = ""
             try:
-                meta.append(str(dateparser.parse(date)))
+                when = dtparse.parse(date).date().isoformat()
             except Exception:
-                meta.append(date)
-        if from_:
-            meta.append(f"From {from_}")
-        if to:
-            meta.append(f"To {to}")
-        msgs.append({
-            "display": subject or os.path.basename(path),
-            "text": text,
-            "meta": " • ".join(meta),
-        })
-    return msgs
+                pass
+            meta = " • ".join([date, f"From {frm}", f"To {to}" if to else ""]).strip(" •")
+            yield {"display": subj or "(no subject)", "text": text, "when": when, "meta": meta}
+
+# ---------- main ----------
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--include", nargs="*", help="Directories to scan for files")
-    ap.add_argument("--include-file", help="File listing directories to scan for files")
+    ap.add_argument("--include", nargs="*", help="Directories to scan")
+    ap.add_argument("--include-file", help="File listing directories to scan")
+    ap.add_argument("--path-list", help="File with newline-delimited absolute paths (from Spotlight)")
     ap.add_argument("--ics", nargs="*", help="ICS files")
     ap.add_argument("--ics-file", help="File listing ICS paths")
     ap.add_argument("--mbox", nargs="*", help="MBOX files")
     ap.add_argument("--mbox-file", help="File listing MBOX paths")
     ap.add_argument("--rules", default=str(Path(__file__).resolve().parents[1] / "config" / "rules.yml"))
     ap.add_argument("--out", default="out", help="Output directory")
-
-    # NEW speed knobs
-    ap.add_argument("--modified-since", help="YYYY-MM-DD (file mtime lower bound)")
-    ap.add_argument("--modified-until", help="YYYY-MM-DD (file mtime upper bound, inclusive)")
-    ap.add_argument("--max-bytes", type=int, default=0, help="Skip files larger than this many bytes (0 = no limit)")
-    ap.add_argument("--only-ext", help="Comma list to override rules.yml include_extensions (e.g. .pdf,.docx)")
-    ap.add_argument("--workers", type=int, default=4, help="Concurrent workers for file reads (4–8 is good)")
+    # Speed/filters
+    ap.add_argument("--modified-since", help="YYYY-MM-DD")
+    ap.add_argument("--modified-until", help="YYYY-MM-DD")
+    ap.add_argument("--max-bytes", type=int, default=0)
+    ap.add_argument("--only-ext", help="Comma list to override include_extensions (e.g. .pdf,.docx)")
     args = ap.parse_args()
 
-    cfg, compiled = load_rules(args.rules)
-    include_exts = set(cfg["file_filters"]["include_extensions"])
-    exclude_dirs = set(cfg["file_filters"]["exclude_dirs"])
-    per_points = int(cfg["scoring"]["per_hit_points"])
-    cap = int(cfg["scoring"]["cap_per_file"])
+    cfg, compiled, per_hit, cap, cat_w, bonus = load_rules(args.rules)
+
+    include_dirs = set(args.include or []) | set(read_lines_file(args.include_file))
+    ics_paths = set(args.ics or []) | set(read_lines_file(args.ics_file))
+    mbox_paths = set(args.mbox or []) | set(read_lines_file(args.mbox_file))
+    spotlight_paths = set(load_path_list(args.path_list))
+
+    include_exts = set([e.lower() for e in cfg["file_filters"]["include_extensions"]])
+    if args.only_ext:
+        include_exts = set([e.strip().lower() for e in args.only_ext.split(",") if e.strip()])
+
+    exclude_dirs = set(cfg["file_filters"].get("exclude_dirs", []))
 
     since_ts = to_epoch(args.modified_since)
     until_ts = to_epoch(args.modified_until)
-    include_exts = set(cfg["file_filters"]["include_extensions"])
-    if args.only_ext:
-    include_exts = set([e.strip().lower() for e in args.only_ext.split(",") if e.strip()])
     max_bytes = max(0, int(args.max_bytes or 0))
 
-    include_dirs = list(filter(None, (args.include or []))) + load_list_file(args.include_file)
-    ics_paths = list(filter(None, (args.ics or []))) + load_list_file(args.ics_file)
-    mbox_paths = list(filter(None, (args.mbox or []))) + load_list_file(args.mbox_file)
-
     os.makedirs(args.out, exist_ok=True)
+
+    # Build file list
+    files_to_scan = []
+    if spotlight_paths:
+        for p in spotlight_paths:
+            try:
+                name = os.path.basename(p).lower()
+                ext = os.path.splitext(name)[1]
+                if include_exts and ext not in include_exts:
+                    continue
+                st = os.stat(p)
+                if max_bytes and st.st_size > max_bytes:
+                    continue
+                if since_ts and st.st_mtime < since_ts:
+                    continue
+                if until_ts and st.st_mtime > until_ts + 86399:
+                    continue
+                files_to_scan.append(p)
+            except Exception:
+                continue
+    elif include_dirs:
+        files_to_scan = list(walk_files(include_dirs, include_exts, exclude_dirs, since_ts, until_ts, max_bytes))
+
     rows = []
 
-    # --- FILES (pdf/docx/pptx/txt) ---
-    file_paths = list(walk_files(include_dirs, include_exts, exclude_dirs, since_ts, until_ts, max_bytes)) if include_dirs else []
-    for path in tqdm(file_paths, desc="Scanning files"):
+    # File scan
+    PROPRIETARY_HINTS = {".sib", ".musx", ".mus", ".ftmx", ".ftm", ".3dj", ".3dz", ".3da", ".prod"}
+    for path in files_to_scan:
         try:
-            text = extract_text(path)
+            st = os.stat(path)
         except Exception:
-            text = ""
+            continue
+        name = os.path.basename(path)
+        ext = os.path.splitext(name.lower())[1]
+        text = extract_text(path)
+        if not text and ext in PROPRIETARY_HINTS:
+            # let filename trigger rules (e.g., commissioned, premiere, etc.)
+            text = name.lower()
+
         if not text:
             continue
+
         for cat, subs in compiled.items():
             for sub, pats in subs.items():
-                score, hits = score_text(text, pats, per_points, cap)
+                score, hits = score_text(text, pats, per_hit, cap)
                 if score > 0:
+                    wmult = float(cat_w.get(cat, 1.0)) if isinstance(cat_w, dict) else 1.0
+                    bsum = 0.0
+                    if isinstance(bonus, dict):
+                        for k, pts in bonus.items():
+                            try:
+                                if k and re.search(re.escape(k), text, re.IGNORECASE):
+                                    bsum += float(pts)
+                            except Exception:
+                                pass
+                    adj_score = score * wmult + bsum
                     rows.append({
                         "source": "files",
                         "path": path,
-                        "display": os.path.basename(path),
+                        "display": path,
+                        "category": cat,
+                        "subcategory": sub,
+                        "hits": hits,
+                        "score": int(adj_score) if float(adj_score).is_integer() else adj_score,
+                        "meta": f"mtime {datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()}",
+                        "when": iso_date_from_epoch(st.st_mtime),
+                    })
+
+    # ICS
+    for item in iter_ics(ics_paths):
+        text = item["text"]
+        for cat, subs in compiled.items():
+            for sub, pats in subs.items():
+                score, hits = score_text(text, pats, per_hit, cap)
+                if score > 0:
+                    rows.append({
+                        "source": "calendar",
+                        "path": "ics",
+                        "display": item["display"],
                         "category": cat,
                         "subcategory": sub,
                         "hits": hits,
                         "score": score,
-                        "meta": "",
+                        "meta": item["meta"],
+                        "when": item["when"] or "",
                     })
 
-    # --- CALENDAR (.ics) ---
-    for path in tqdm(ics_paths, desc="Scanning calendars"):
-        events = ics_events_from_file(path)
-        for ev in events:
-            text = ev["text"]
-            for cat, subs in compiled.items():
-                for sub, pats in subs.items():
-                    score, hits = score_text(text, pats, per_points, cap)
-                    if score > 0:
-                        rows.append({
-                            "source": "calendar",
-                            "path": path,
-                            "display": ev["display"],
-                            "category": cat,
-                            "subcategory": sub,
-                            "hits": hits,
-                            "score": score,
-                            "meta": ev.get("meta",""),
-                        })
-
-    # --- EMAIL (.mbox) ---
-    for path in tqdm(mbox_paths, desc="Scanning email"):
-        msgs = mbox_messages_from_file(path)
-        for m in msgs:
-            text = m["text"]
-            for cat, subs in compiled.items():
-                for sub, pats in subs.items():
-                    score, hits = score_text(text, pats, per_points, cap)
-                    if score > 0:
-                        rows.append({
-                            "source": "email",
-                            "path": path,
-                            "display": m["display"],
-                            "category": cat,
-                            "subcategory": sub,
-                            "hits": hits,
-                            "score": score,
-                            "meta": m.get("meta",""),
-                        })
+    # MBOX
+    for item in iter_mbox(mbox_paths):
+        text = item["text"]
+        for cat, subs in compiled.items():
+            for sub, pats in subs.items():
+                score, hits = score_text(text, pats, per_hit, cap)
+                if score > 0:
+                    rows.append({
+                        "source": "email",
+                        "path": "mbox",
+                        "display": item["display"],
+                        "category": cat,
+                        "subcategory": sub,
+                        "hits": hits,
+                        "score": score,
+                        "meta": item["meta"],
+                        "when": item["when"] or "",
+                    })
 
     if not rows:
-        print("No matches found. Try expanding config/rules.yml or different sources.")
+        print("No matches. Try widening the date range, extensions, or rules.")
         return
 
-    rows.sort(key=lambda r: (r["source"], -r["score"], r["category"], r["subcategory"], r["display"]))
+    rows.sort(key=lambda r: (r["source"], -float(r["score"]), r["category"], r["subcategory"], r["display"]))
     evidence_csv = write_csv(rows, args.out, "evidence.csv")
     summary_csv = write_summary(rows, args.out)
     report_html = write_html(rows, args.out)
