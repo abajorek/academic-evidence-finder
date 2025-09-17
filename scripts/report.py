@@ -29,7 +29,7 @@ def write_html(rows, outdir):
         lis = "\n".join(
             f'<li><strong>{esc(os.path.basename(i["display"]))}</strong>'
             f' — score {i["score"]} <br><code title="{esc(i["display"])}">{esc(i["path"])}</code>'
-            f'{f"<br><span class=\\"meta\\">{esc(i.get("meta",""))}</span>" if i.get("meta") else ""}'
+            (f'<br><span class="meta">{esc(i.get("meta",""))}</span>' if i.get("meta") else "")
             f'</li>'
             for i in sorted(items, key=lambda x: -x["score"])[:100]
         )
