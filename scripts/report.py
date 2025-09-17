@@ -12,26 +12,28 @@ def write_csv(rows, outdir, name):
 def write_summary(rows, outdir):
     counts = defaultdict(int)
     for r in rows:
-        counts[(r["category"], r["subcategory"])] += 1
-    sum_rows = [{"category": c, "subcategory": s, "count": n}
-                for (c,s), n in sorted(counts.items())]
+        counts[(r["source"], r["category"], r["subcategory"])] += 1
+    sum_rows = [{"source": s, "category": c, "subcategory": sc, "count": n}
+                for (s,c,sc), n in sorted(counts.items())]
     return write_csv(sum_rows, outdir, "summary.csv")
 
 def write_html(rows, outdir):
-    by_cat = defaultdict(list)
+    by_src_cat = defaultdict(list)
     for r in rows:
-        by_cat[(r["category"], r["subcategory"])].append(r)
+        by_src_cat[(r["source"], r["category"], r["subcategory"])].append(r)
 
     def esc(s): return html.escape(str(s or ""))
 
-    sections = []
-    for (cat, sub), items in sorted(by_cat.items()):
+    groups = []
+    for (src, cat, sub), items in sorted(by_src_cat.items()):
         lis = "\n".join(
-            f'<li><strong>{esc(os.path.basename(i["path"]))}</strong>'
-            f' — score {i["score"]} <br><code>{esc(i["path"])}</code></li>'
-            for i in sorted(items, key=lambda x: -x["score"])[:50]
+            f'<li><strong>{esc(os.path.basename(i["display"]))}</strong>'
+            f' — score {i["score"]} <br><code title="{esc(i["display"])}">{esc(i["path"])}</code>'
+            f'{f"<br><span class=\\"meta\\">{esc(i.get("meta",""))}</span>" if i.get("meta") else ""}'
+            f'</li>'
+            for i in sorted(items, key=lambda x: -x["score"])[:100]
         )
-        sections.append(f"<h2>{esc(cat)} ▸ {esc(sub)} ({len(items)})</h2><ul>{lis}</ul>")
+        groups.append(f"<h2>{esc(src)} ▸ {esc(cat)} ▸ {esc(sub)} ({len(items)})</h2><ul>{lis}</ul>")
 
     html_doc = f"""<!doctype html>
 <html><head><meta charset="utf-8"><title>Academic Evidence Report</title>
@@ -42,11 +44,12 @@ def write_html(rows, outdir):
  code{{background:#f6f8fa;padding:2px 4px;border-radius:4px}}
  li{{margin:6px 0}}
  .note{{color:#555}}
+ .meta{{color:#666;font-size:0.9em}}
 </style></head>
 <body>
 <h1>Academic Evidence Report</h1>
-<p class="note">Generated locally. Lists top matches per subcategory (max 50 shown).</p>
-{''.join(sections)}
+<p class="note">Generated locally. Grouped by Source ▸ Category ▸ Subcategory (top 100 shown per group).</p>
+{''.join(groups)}
 </body></html>"""
     path = os.path.join(outdir, "report.html")
     with open(path, "w") as f:
