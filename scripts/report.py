@@ -25,18 +25,17 @@ def _esc(x):
     return html.escape(str(x or ""))
 
 def write_html(rows, outdir):
-    # group rows by Source ▸ Category ▸ Subcategory
     grouped = defaultdict(list)
     for r in rows:
-        grouped[(r["source"], r["category"], r["subcategory"])].append(r)
+        grouped[(r["source"], r["category"], r["subcategory"])] += [r]
 
     sections = []
     for (src, cat, sub), items in sorted(grouped.items()):
-        # sort items by score desc, then name
         items_sorted = sorted(items, key=lambda i: (-i["score"], i["display"]))[:100]
         lis_parts = []
         for i in items_sorted:
-            meta_html = f'<br><span class="meta">{_esc(i.get("meta", ""))}</span>' if i.get("meta") else ""
+            meta = i.get("meta", "")
+            meta_html = f'<br><span class="meta">{_esc(meta)}</span>' if meta else ""
             li = (
                 "<li>"
                 f"<strong>{_esc(os.path.basename(i['display']))}</strong>"
