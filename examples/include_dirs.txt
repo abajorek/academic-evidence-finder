@@ -2,3 +2,5 @@
 ~/Documents
 ~/Desktop
 ~/Downloads
+# Folders to scan
+./examples
