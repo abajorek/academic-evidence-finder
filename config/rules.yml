@@ -87,3 +87,30 @@ scoring:
   # Each match contributes points; higher = stronger evidence
   per_hit_points: 1
   cap_per_file: 10
+
+    Service:
+    Committees:
+      any:
+        - "\\bcommittee\\b"
+        - "agenda"
+        - "minutes"
+        - "motion carried"
+        - "meeting invite"
+        - "Zoom link"
+  Scholarship:
+    Presentations:
+      any:
+        - "\\bconference\\b"
+        - "\\babstract\\b"
+        - "\\bprogram\\b"
+        - "\\bposter\\b"
+        - "\\bproceedings\\b"
+        - "accepted to present"
+  Teaching:
+    Assessment/Evals:
+      any:
+        - "D2L|Brightspace|Canvas"
+        - "course evaluation"
+        - "rubric"
+        - "grade export"
+
