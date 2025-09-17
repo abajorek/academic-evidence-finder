@@ -1,0 +1,4 @@
+# Absolute paths to .ics files (calendar exports)
+~/Downloads/Teaching_Calendar.ics
+~/Downloads/Service_Committee.ics
+~/Downloads/Conferences.ics
