@@ -1,9 +1,11 @@
-import argparse, os, re, yaml, mailbox
+cat > scripts/scan.py <<'PY'
+import argparse, os, re, yaml, mailbox, json, time
 from pathlib import Path
 from datetime import datetime, timezone
 from dateutil import parser as dtparse
 from icalendar import Calendar
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 from report import write_csv, write_summary, write_html
 from extractors import extract_text
@@ -11,7 +13,7 @@ from extractors import extract_text
 # ---------- helpers ----------
 
 def to_epoch(dstr):
-    if not dstr: 
+    if not dstr:
         return None
     return datetime.strptime(dstr, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()
 
@@ -19,16 +21,36 @@ def iso_date_from_epoch(ts: float) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
 
 def read_lines_file(path):
-    if not path: 
+    if not path:
         return []
     with open(path, "r") as f:
         return [ln.strip() for ln in f if ln.strip() and not ln.strip().startswith("#")]
 
 def load_path_list(path):
-    if not path or not os.path.exists(path): 
+    if not path or not os.path.exists(path):
         return []
     with open(path, "r") as f:
         return [ln.strip() for ln in f if ln.strip()]
+
+def write_progress(outdir, stage, n, total, started_ts):
+    os.makedirs(outdir, exist_ok=True)
+    now = time.time()
+    elapsed = now - started_ts
+    remaining = None
+    if total and n:
+        rate = n / elapsed if elapsed > 0 else 0
+        if rate > 0:
+            remaining = max(0.0, (total - n) / rate)
+    payload = {
+        "stage": stage,
+        "processed": int(n),
+        "total": int(total) if total is not None else None,
+        "elapsed_sec": round(elapsed, 2),
+        "eta_sec": (round(remaining, 2) if remaining is not None else None),
+        "updated_at": datetime.utcnow().isoformat() + "Z",
+    }
+    with open(os.path.join(outdir, "progress.json"), "w") as f:
+        json.dump(payload, f)
 
 # ---------- rules ----------
 
@@ -46,7 +68,6 @@ def load_rules(path):
     cap = int(scoring.get("cap_per_file", 10))
     cat_w = scoring.get("category_weights", {}) or {}
     bonus = scoring.get("bonus_keywords", {}) or {}
-    # normalize bonus if it was accidentally a list like ["key: val", ...]
     if isinstance(bonus, list):
         m = {}
         for item in bonus:
@@ -179,6 +200,8 @@ def main():
     ap.add_argument("--only-ext", help="Comma list to override include_extensions (e.g. .pdf,.docx)")
     args = ap.parse_args()
 
+    start_ts = time.time()
+
     cfg, compiled, per_hit, cap, cat_w, bonus = load_rules(args.rules)
 
     include_dirs = set(args.include or []) | set(read_lines_file(args.include_file))
@@ -197,11 +220,22 @@ def main():
     max_bytes = max(0, int(args.max_bytes or 0))
 
     os.makedirs(args.out, exist_ok=True)
+    write_progress(args.out, "indexing", 0, 0, start_ts)
 
     # Build file list
     files_to_scan = []
+    # If we have a Spotlight list, lightly filter it and show a short progress bar
     if spotlight_paths:
+        write_progress(args.out, "filtering", 0, len(spotlight_paths), start_ts)
+        pbar_filt = tqdm(
+            total=len(spotlight_paths),
+            desc="Filtering file list",
+            unit="file",
+            dynamic_ncols=True,
+            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]"
+        )
         for p in spotlight_paths:
+            pbar_filt.update(1)
             try:
                 name = os.path.basename(p).lower()
                 ext = os.path.splitext(name)[1]
@@ -217,93 +251,147 @@ def main():
                 files_to_scan.append(p)
             except Exception:
                 continue
+            finally:
+                write_progress(args.out, "filtering", pbar_filt.n, pbar_filt.total, start_ts)
+        pbar_filt.close()
     elif include_dirs:
-        files_to_scan = list(walk_files(include_dirs, include_exts, exclude_dirs, since_ts, until_ts, max_bytes))
+        # Walk directories with a counter-only bar (total unknown)
+        write_progress(args.out, "walking", 0, 0, start_ts)
+        pbar_walk = tqdm(
+            desc="Walking directories",
+            unit="file",
+            dynamic_ncols=True,
+            bar_format="{l_bar}{bar}| {n_fmt} files [{elapsed}, {rate_fmt}]"
+        )
+        for p in walk_files(include_dirs, include_exts, exclude_dirs, since_ts, until_ts, max_bytes):
+            files_to_scan.append(p)
+            pbar_walk.update(1)
+            write_progress(args.out, "walking", pbar_walk.n, 0, start_ts)
+        pbar_walk.close()
+
+    total_files = len(files_to_scan)
+    write_progress(args.out, "processing", 0, total_files, start_ts)
 
     rows = []
 
-    # File scan
+    # File scan with progress
     PROPRIETARY_HINTS = {".sib", ".musx", ".mus", ".ftmx", ".ftm", ".3dj", ".3dz", ".3da", ".prod"}
+
+    pbar = tqdm(
+        total=total_files,
+        desc="Processing files",
+        unit="file",
+        dynamic_ncols=True,
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]"
+    )
+
     for path in files_to_scan:
+        # show the current file name (truncated) so you can see it’s alive
+        base = os.path.basename(path)
+        if len(base) > 45: base = base[:42] + "..."
+        pbar.set_description(f"Processing {base}")
+
+        t0 = time.perf_counter()
         try:
             st = os.stat(path)
         except Exception:
+            pbar.update(1)
+            write_progress(args.out, "processing", pbar.n, total_files, start_ts)
             continue
-        name = os.path.basename(path)
-        ext = os.path.splitext(name.lower())[1]
+
+        ext = os.path.splitext(base.lower())[1]
         text = extract_text(path)
         if not text and ext in PROPRIETARY_HINTS:
-            # let filename trigger rules (e.g., commissioned, premiere, etc.)
-            text = name.lower()
+            text = base.lower()
 
-        if not text:
-            continue
+        if text:
+            for cat, subs in compiled.items():
+                for sub, pats in subs.items():
+                    score, hits = score_text(text, pats, per_hit, cap)
+                    if score > 0:
+                        wmult = float(cat_w.get(cat, 1.0)) if isinstance(cat_w, dict) else 1.0
+                        bsum = 0.0
+                        if isinstance(bonus, dict):
+                            for k, pts in bonus.items():
+                                try:
+                                    if k and re.search(re.escape(k), text, re.IGNORECASE):
+                                        bsum += float(pts)
+                                except Exception:
+                                    pass
+                        adj_score = score * wmult + bsum
+                        if float(adj_score).is_integer():
+                            adj_score = int(adj_score)
+                        rows.append({
+                            "source": "files",
+                            "path": path,
+                            "display": path,
+                            "category": cat,
+                            "subcategory": sub,
+                            "hits": hits,
+                            "score": adj_score,
+                            "meta": f"mtime {datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()}",
+                            "when": iso_date_from_epoch(st.st_mtime),
+                        })
 
-        for cat, subs in compiled.items():
-            for sub, pats in subs.items():
-                score, hits = score_text(text, pats, per_hit, cap)
-                if score > 0:
-                    wmult = float(cat_w.get(cat, 1.0)) if isinstance(cat_w, dict) else 1.0
-                    bsum = 0.0
-                    if isinstance(bonus, dict):
-                        for k, pts in bonus.items():
-                            try:
-                                if k and re.search(re.escape(k), text, re.IGNORECASE):
-                                    bsum += float(pts)
-                            except Exception:
-                                pass
-                    adj_score = score * wmult + bsum
-                    rows.append({
-                        "source": "files",
-                        "path": path,
-                        "display": path,
-                        "category": cat,
-                        "subcategory": sub,
-                        "hits": hits,
-                        "score": int(adj_score) if float(adj_score).is_integer() else adj_score,
-                        "meta": f"mtime {datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()}",
-                        "when": iso_date_from_epoch(st.st_mtime),
-                    })
+        # per-file timing in postfix
+        dt = time.perf_counter() - t0
+        pbar.set_postfix_str(f"{dt:.2f}s")
+        pbar.update(1)
+        write_progress(args.out, "processing", pbar.n, total_files, start_ts)
 
-    # ICS
-    for item in iter_ics(ics_paths):
-        text = item["text"]
-        for cat, subs in compiled.items():
-            for sub, pats in subs.items():
-                score, hits = score_text(text, pats, per_hit, cap)
-                if score > 0:
-                    rows.append({
-                        "source": "calendar",
-                        "path": "ics",
-                        "display": item["display"],
-                        "category": cat,
-                        "subcategory": sub,
-                        "hits": hits,
-                        "score": score,
-                        "meta": item["meta"],
-                        "when": item["when"] or "",
-                    })
+    pbar.close()
 
-    # MBOX
-    for item in iter_mbox(mbox_paths):
-        text = item["text"]
-        for cat, subs in compiled.items():
-            for sub, pats in subs.items():
-                score, hits = score_text(text, pats, per_hit, cap)
-                if score > 0:
-                    rows.append({
-                        "source": "email",
-                        "path": "mbox",
-                        "display": item["display"],
-                        "category": cat,
-                        "subcategory": sub,
-                        "hits": hits,
-                        "score": score,
-                        "meta": item["meta"],
-                        "when": item["when"] or "",
-                    })
+    # ICS (tiny progress)
+    if ics_paths:
+        w = tqdm(total=len(ics_paths), desc="Parsing ICS", unit="file", dynamic_ncols=True)
+        for item_path in ics_paths:
+            # consume generator but keep bar alive per file
+            for item in iter_ics([item_path]):
+                text = item["text"]
+                for cat, subs in compiled.items():
+                    for sub, pats in subs.items():
+                        score, hits = score_text(text, pats, per_hit, cap)
+                        if score > 0:
+                            rows.append({
+                                "source": "calendar",
+                                "path": "ics",
+                                "display": item["display"],
+                                "category": cat,
+                                "subcategory": sub,
+                                "hits": hits,
+                                "score": score,
+                                "meta": item["meta"],
+                                "when": item["when"] or "",
+                            })
+            w.update(1)
+        w.close()
+
+    # MBOX (tiny progress)
+    if mbox_paths:
+        w = tqdm(total=len(mbox_paths), desc="Parsing MBOX", unit="file", dynamic_ncols=True)
+        for item_path in mbox_paths:
+            for item in iter_mbox([item_path]):
+                text = item["text"]
+                for cat, subs in compiled.items():
+                    for sub, pats in subs.items():
+                        score, hits = score_text(text, pats, per_hit, cap)
+                        if score > 0:
+                            rows.append({
+                                "source": "email",
+                                "path": "mbox",
+                                "display": item["display"],
+                                "category": cat,
+                                "subcategory": sub,
+                                "hits": hits,
+                                "score": score,
+                                "meta": item["meta"],
+                                "when": item["when"] or "",
+                            })
+            w.update(1)
+        w.close()
 
     if not rows:
+        write_progress(args.out, "done_no_matches", 0, total_files, start_ts)
         print("No matches. Try widening the date range, extensions, or rules.")
         return
 
@@ -311,7 +399,10 @@ def main():
     evidence_csv = write_csv(rows, args.out, "evidence.csv")
     summary_csv = write_summary(rows, args.out)
     report_html = write_html(rows, args.out)
+
+    write_progress(args.out, "done", total_files, total_files, start_ts)
     print(f"Wrote:\n  {evidence_csv}\n  {summary_csv}\n  {report_html}")
 
 if __name__ == "__main__":
     main()
+PY
