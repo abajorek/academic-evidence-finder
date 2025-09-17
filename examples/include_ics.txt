@@ -2,3 +2,4 @@
 ~/Downloads/rm_reservations.ics
 ~/Downloads/Service_Committee.ics
 ~/Downloads/Conferences.ics
+./examples/sample.ics
