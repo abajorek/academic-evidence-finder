@@ -1,4 +1,3 @@
-cat > scripts/scan.py <<'PY'
 import argparse, os, re, yaml, mailbox, json, time
 from pathlib import Path
 from datetime import datetime, timezone
@@ -67,7 +66,7 @@ def load_rules(path):
     per_hit = int(scoring.get("per_hit_points", 1))
     cap = int(scoring.get("cap_per_file", 10))
     cat_w = scoring.get("category_weights", {}) or {}
-    bonus = scoring.get("bonus_keywords", {}) or {}
+    bonus = cfg.get("scoring", {}).get("bonus_keywords", {}) or {}
     if isinstance(bonus, list):
         m = {}
         for item in bonus:
@@ -149,7 +148,6 @@ def iter_mbox(paths):
             frm = msg.get("from", "") or ""
             to  = msg.get("to", "") or ""
             date = msg.get("date", "") or ""
-            # body
             body = ""
             try:
                 if msg.is_multipart():
@@ -193,7 +191,6 @@ def main():
     ap.add_argument("--mbox-file", help="File listing MBOX paths")
     ap.add_argument("--rules", default=str(Path(__file__).resolve().parents[1] / "config" / "rules.yml"))
     ap.add_argument("--out", default="out", help="Output directory")
-    # Speed/filters
     ap.add_argument("--modified-since", help="YYYY-MM-DD")
     ap.add_argument("--modified-until", help="YYYY-MM-DD")
     ap.add_argument("--max-bytes", type=int, default=0)
@@ -222,18 +219,11 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     write_progress(args.out, "indexing", 0, 0, start_ts)
 
-    # Build file list
     files_to_scan = []
-    # If we have a Spotlight list, lightly filter it and show a short progress bar
     if spotlight_paths:
         write_progress(args.out, "filtering", 0, len(spotlight_paths), start_ts)
-        pbar_filt = tqdm(
-            total=len(spotlight_paths),
-            desc="Filtering file list",
-            unit="file",
-            dynamic_ncols=True,
-            bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]"
-        )
+        pbar_filt = tqdm(total=len(spotlight_paths), desc="Filtering file list", unit="file",
+                         dynamic_ncols=True, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]")
         for p in spotlight_paths:
             pbar_filt.update(1)
             try:
@@ -255,14 +245,9 @@ def main():
                 write_progress(args.out, "filtering", pbar_filt.n, pbar_filt.total, start_ts)
         pbar_filt.close()
     elif include_dirs:
-        # Walk directories with a counter-only bar (total unknown)
         write_progress(args.out, "walking", 0, 0, start_ts)
-        pbar_walk = tqdm(
-            desc="Walking directories",
-            unit="file",
-            dynamic_ncols=True,
-            bar_format="{l_bar}{bar}| {n_fmt} files [{elapsed}, {rate_fmt}]"
-        )
+        pbar_walk = tqdm(desc="Walking directories", unit="file", dynamic_ncols=True,
+                         bar_format="{l_bar}{bar}| {n_fmt} files [{elapsed}, {rate_fmt}]")
         for p in walk_files(include_dirs, include_exts, exclude_dirs, since_ts, until_ts, max_bytes):
             files_to_scan.append(p)
             pbar_walk.update(1)
@@ -273,20 +258,12 @@ def main():
     write_progress(args.out, "processing", 0, total_files, start_ts)
 
     rows = []
-
-    # File scan with progress
     PROPRIETARY_HINTS = {".sib", ".musx", ".mus", ".ftmx", ".ftm", ".3dj", ".3dz", ".3da", ".prod"}
 
-    pbar = tqdm(
-        total=total_files,
-        desc="Processing files",
-        unit="file",
-        dynamic_ncols=True,
-        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]"
-    )
+    pbar = tqdm(total=total_files, desc="Processing files", unit="file", dynamic_ncols=True,
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]")
 
     for path in files_to_scan:
-        # show the current file name (truncated) so you can see it’s alive
         base = os.path.basename(path)
         if len(base) > 45: base = base[:42] + "..."
         pbar.set_description(f"Processing {base}")
@@ -333,7 +310,6 @@ def main():
                             "when": iso_date_from_epoch(st.st_mtime),
                         })
 
-        # per-file timing in postfix
         dt = time.perf_counter() - t0
         pbar.set_postfix_str(f"{dt:.2f}s")
         pbar.update(1)
@@ -341,11 +317,9 @@ def main():
 
     pbar.close()
 
-    # ICS (tiny progress)
     if ics_paths:
         w = tqdm(total=len(ics_paths), desc="Parsing ICS", unit="file", dynamic_ncols=True)
         for item_path in ics_paths:
-            # consume generator but keep bar alive per file
             for item in iter_ics([item_path]):
                 text = item["text"]
                 for cat, subs in compiled.items():
@@ -366,7 +340,6 @@ def main():
             w.update(1)
         w.close()
 
-    # MBOX (tiny progress)
     if mbox_paths:
         w = tqdm(total=len(mbox_paths), desc="Parsing MBOX", unit="file", dynamic_ncols=True)
         for item_path in mbox_paths:
@@ -405,4 +378,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-PY
