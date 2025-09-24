@@ -1,356 +1,320 @@
-# Enhanced rules.yml with music notation and drill design file support
-
 categories:
   Teaching:
-    # ... keep all your existing Teaching categories ...
-    
-    Music_Creation_Teaching:
+    Syllabi:
       any:
-        - "score study"
-        - "musical analysis" 
-        - "composition lesson"
-        - "arranging technique"
-        - "orchestration"
-        - "music theory application"
-        - "notation software"
-        - "Finale tutorial"
-        - "Sibelius instruction"
-        - "music technology"
-        - "MIDI sequencing"
-        - "digital audio workstation"
-        - "score preparation"
-        - "parts extraction"
-        - "transposition"
-        
-    Drill_Design_Teaching:
+      - \bsyllabus\b
+      - \boffice hours\b
+      - \bcredit hours\b
+      - \bprerequisites?\b
+      - \bgrading (policy|scale)\b
+      - \bcourse (schedule|outline)\b
+      - \blearning outcomes?\b
+    Assignments:
       any:
-        - "drill design"
-        - "marching technique"
-        - "field choreography"
-        - "formation design"
-        - "Pyware instruction"
-        - "3D animation"
-        - "drill writing"
-        - "marching fundamentals"
-        - "visual design"
-        - "field coverage"
-        - "transition design"
-        - "coordinate system"
-        - "yard line reference"
-        - "step size"
-        - "tempo mapping"
-
+      - \bassignment\b
+      - \bdue date\b
+      - \bsubmission\b
+      - \bplagiarism\b
+      - \brubric\b
+      - \bpoints?\b
+      - \b(LMS|Canvas|Blackboard|D2L|Moodle)\b
+    Exams:
+      any:
+      - \bexam\b
+      - \bmidterm\b
+      - \bfinal exam\b
+      - \bquiz\b
+      - \bproctor\b
   Service:
-    # ... keep existing Service categories ...
-    
-    Creative_Production_Service:
+    Conference:
       any:
-        - "halftime show design"
-        - "field show production"
-        - "music arrangement"
-        - "custom arrangement"
-        - "score preparation"
-        - "parts preparation" 
-        - "music library management"
-        - "copyright clearance"
-        - "performance licensing"
-        - "ASCAP reporting"
-        - "BMI licensing"
-        - "drill design service"
-        - "guest arrangement"
-        - "commissioned work"
-
+      - call for papers
+      - \bproposal\b
+      - \bproceedings\b
+      - \bposter\b
+      - \bpresentation\b
   Scholarship:
-    # ... keep existing Scholarship categories ...
-    
     Musical_Compositions:
       any:
-        - "original composition"
-        - "commissioned piece"
-        - "premiere performance"
-        - "world premiere"
-        - "regional premiere"
-        - "musical work"
-        - "concert piece"
-        - "chamber work"
-        - "solo piece"
-        - "ensemble piece"
-        - "wind band composition"
-        - "concert band piece"
-        - "marching band arrangement"
-        - "ceremonial music"
-        - "processional"
-        - "fanfare"
-        - "overture"
-        
+      - original composition
+      - commissioned piece
+      - premiere performance
+      - world premiere
+      - regional premiere
+      - musical work
+      - concert piece
+      - chamber work
+      - solo piece
+      - ensemble piece
+      - wind band composition
+      - concert band piece
+      - marching band arrangement
+      - ceremonial music
+      - processional
+      - fanfare
+      - overture
     Music_Arrangements:
       any:
-        - "musical arrangement"
-        - "transcription"
-        - "adaptation"
-        - "orchestration"
-        - "re-orchestration"
-        - "instrumentation"
-        - "wind band arrangement"
-        - "concert band arrangement"
-        - "marching band arrangement"
-        - "pep band arrangement"
-        - "jazz arrangement"
-        - "popular music arrangement"
-        - "traditional arrangement"
-        - "folk song arrangement"
-        - "hymn arrangement"
-        - "patriotic arrangement"
-        
+      - musical arrangement
+      - transcription
+      - adaptation
+      - orchestration
+      - re-orchestration
+      - instrumentation
+      - wind band arrangement
+      - concert band arrangement
+      - marching band arrangement
+      - pep band arrangement
+      - jazz arrangement
+      - popular music arrangement
+      - traditional arrangement
+      - folk song arrangement
+      - hymn arrangement
+      - patriotic arrangement
     Drill_Design_Works:
       any:
-        - "drill design"
-        - "field show design"
-        - "marching show"
-        - "halftime show"
-        - "competition show"
-        - "parade formation"
-        - "ceremonial formation"
-        - "visual design"
-        - "3D drill animation"
-        - "field choreography"
-        - "formation design"
-        - "drill innovation"
-        - "visual effect"
-        - "prop integration"
-        - "color guard integration"
-        
+      - drill design
+      - field show design
+      - marching show
+      - halftime show
+      - competition show
+      - parade formation
+      - ceremonial formation
+      - visual design
+      - 3D drill animation
+      - field choreography
+      - formation design
+      - drill innovation
+      - visual effect
+      - prop integration
+      - color guard integration
     Music_Technology_Research:
       any:
-        - "music notation software"
-        - "digital music creation"
-        - "MIDI technology"
-        - "music software development"
-        - "audio production"
-        - "music app development"
-        - "educational technology"
-        - "music learning software"
-        - "rehearsal technology"
-        - "performance technology"
-        - "music distribution"
-        - "streaming optimization"
-
-# Enhanced file filters to include music and drill design files
+      - music notation software
+      - digital music creation
+      - MIDI technology
+      - music software development
+      - audio production
+      - music app development
+      - educational technology
+      - music learning software
+      - rehearsal technology
+      - performance technology
+      - music distribution
+      - streaming optimization
+  Debug:
+    AnyText:
+      any:
+      - \w{3,}
+  Research:
+    IRB:
+      any:
+      - \bIRB\b
+      - institutional review board
+      - \bprotocol\b
+      - \binformed consent\b
+      - \bqualtrics\b
+    Publications:
+      any:
+      - \babstract\b
+      - \bmethodology\b
+      - \bliterature review\b
+      - \bresults\b
+      - \bdiscussion\b
+      - \breferences\b
+      - doi:\s*10\.
+      - arXiv:\s*\d{4}\.\d+
+    Grants:
+      any:
+      - \bNSF\b
+      - \bNIH\b
+      - grant proposal
+      - budget justification
+      - \bbiosketch\b
+      - current and pending
+  Administration:
+    Assessment:
+      any:
+      - \bassessment\b
+      - \baccreditation\b
+      - \bHLC\b
+      - \bcurriculum committee\b
+      - \bprogram review\b
 file_filters:
   include_extensions:
-    # Document formats
-    - ".pdf"
-    - ".docx"
-    - ".pptx" 
-    - ".txt"
-    - ".doc"
-    - ".rtf"
-    - ".odt"
-    - ".pages"
-    - ".key"
-    - ".odp"
-    - ".xlsx"
-    - ".xls"
-    - ".csv"
-    - ".ods"
-    - ".numbers"
-    - ".md"
-    - ".tex"
-    - ".html"
-    - ".htm"
-    - ".xml"
-    
-    # Music notation files
-    - ".mus"        # Finale legacy
-    - ".musx"       # Finale current
-    - ".sib"        # Sibelius
-    - ".ftm"        # Finale template
-    - ".ftmx"       # Finale template current
-    - ".musicxml"   # MusicXML
-    - ".mxl"        # Compressed MusicXML
-    - ".xml"        # Generic XML (includes MusicXML)
-    
-    # Drill design files (Pyware)
-    - ".3dj"        # Pyware project file
-    - ".3dz"        # Pyware compressed project
-    - ".3da"        # Pyware animation file
-    - ".prod"       # Pyware production file
-    
-    # Audio/MIDI files (for reference/documentation)
-    - ".mid"        # MIDI
-    - ".midi"       # MIDI
-    - ".mp3"        # Audio reference
-    - ".wav"        # Audio reference
-    - ".aif"        # Audio reference
-    - ".m4a"        # Audio reference
-    
+  - .pdf
+  - .docx
+  - .pptx
+  - .txt
+  - .doc
+  - .rtf
+  - .odt
+  - .pages
+  - .key
+  - .odp
+  - .xlsx
+  - .xls
+  - .csv
+  - .ods
+  - .numbers
+  - .md
+  - .tex
+  - .html
+  - .htm
+  - .xml
+  - .mus
+  - .musx
+  - .sib
+  - .ftm
+  - .ftmx
+  - .musicxml
+  - .mxl
+  - .xml
+  - .3dj
+  - .3dz
+  - .3da
+  - .prod
+  - .mid
+  - .midi
+  - .mp3
+  - .wav
+  - .aif
+  - .m4a
   exclude_dirs:
-    - ".git"
-    - "node_modules"
-    - "__pycache__"
-    - ".venv"
-    - ".DS_Store"
-    - "Thumbs.db"
-    - "temp"
-    - "tmp"
-    - "cache"
-    - "backup"
-    - "archive"
-    - "old"
-    - "deleted"
-    - "trash"
-    - "Finale Backups"      # Finale auto-backup folder
-    - "Sibelius Backups"    # Sibelius auto-backup folder
-    - "Pyware Backups"      # Pyware backup folder
-
-# Enhanced scoring with music/drill specific bonuses
+  - .git
+  - node_modules
+  - __pycache__
+  - .venv
+  - .DS_Store
+  - Thumbs.db
+  - temp
+  - tmp
+  - cache
+  - backup
+  - archive
+  - old
+  - deleted
+  - trash
+  - Finale Backups
+  - Sibelius Backups
+  - Pyware Backups
 scoring:
   per_hit_points: 1
-  cap_per_file: 25          # Higher cap for complex creative files
+  cap_per_file: 25
   category_weights:
     Teaching: 1.0
     Service: 1.1
-    Scholarship: 1.3        # Higher weight for creative scholarship
-    
+    Scholarship: 1.3
   bonus_keywords:
-    # Existing bonuses
-    "NASM": 3
-    "accreditation": 3
-    "tenure": 5
-    "promotion": 5
-    "peer review": 3
-    "published": 4
-    "conference presentation": 4
-    "grant award": 5
-    "fellowship": 4
-    "sabbatical": 4
-    "CBDNA": 3
-    "NAfME": 3
-    
-    # Music creation bonuses
-    "original composition": 8
-    "commissioned work": 8
-    "world premiere": 6
-    "premiere performance": 5
-    "musical arrangement": 4
-    "transcription": 3
-    "orchestration": 4
-    
-    # Drill design bonuses  
-    "drill design": 6
-    "field show design": 7
-    "halftime show": 5
-    "marching band show": 5
-    "3D animation": 4
-    "Pyware": 3
-    
-    # Music technology bonuses
-    "Finale": 2
-    "Sibelius": 2
-    "music notation": 3
-    "MusicXML": 2
-    "MIDI": 2
-    
-    # Professional activity bonuses
-    "guest conductor": 4
-    "masterclass": 3
-    "clinic": 3
-    "adjudicator": 3
-    "festival judge": 3
-    "honor band": 4
-    "all-state": 4
-    
-    # High-impact scholarship bonuses
-    "national conference": 5
-    "international conference": 6
-    "keynote": 7
-    "plenary": 6
-    "editorial board": 5
-    "manuscript review": 4
-    "external review": 4
-    "grant funded": 6
-    
-    # Institution specific
-    "Colorado Mesa": 2
-    "CMEA": 3
-    "Western Division": 4
-
-# File type specific processing hints
+    NASM: 3
+    accreditation: 3
+    tenure: 5
+    promotion: 5
+    peer review: 3
+    published: 4
+    conference presentation: 4
+    grant award: 5
+    fellowship: 4
+    sabbatical: 4
+    CBDNA: 3
+    NAfME: 3
+    original composition: 8
+    commissioned work: 8
+    world premiere: 6
+    premiere performance: 5
+    musical arrangement: 4
+    transcription: 3
+    orchestration: 4
+    drill design: 6
+    field show design: 7
+    halftime show: 5
+    marching band show: 5
+    3D animation: 4
+    Pyware: 3
+    Finale: 2
+    Sibelius: 2
+    music notation: 3
+    MusicXML: 2
+    MIDI: 2
+    guest conductor: 4
+    masterclass: 3
+    clinic: 3
+    adjudicator: 3
+    festival judge: 3
+    honor band: 4
+    all-state: 4
+    national conference: 5
+    international conference: 6
+    keynote: 7
+    plenary: 6
+    editorial board: 5
+    manuscript review: 4
+    external review: 4
+    grant funded: 6
+    Colorado Mesa: 2
+    CMEA: 3
+    Western Division: 4
 file_processing:
-  # Files that need special text extraction
   proprietary_formats:
-    - ".mus"
-    - ".musx" 
-    - ".sib"
-    - ".3dj"
-    - ".3dz"
-    - ".3da" 
-    - ".prod"
-  
-  # For proprietary formats, use filename and metadata for categorization
+  - .mus
+  - .musx
+  - .sib
+  - .3dj
+  - .3dz
+  - .3da
+  - .prod
   filename_analysis:
     composition_indicators:
-      - "original"
-      - "composition"
-      - "op\\s*\\d+"      # Opus numbers
-      - "mvt\\s*\\d+"     # Movement numbers
-      - "no\\s*\\d+"      # Number designations
-      
+    - original
+    - composition
+    - op\s*\d+
+    - mvt\s*\d+
+    - no\s*\d+
     arrangement_indicators:
-      - "arr\\."
-      - "arranged"
-      - "arrangement"
-      - "transcription"
-      - "adaptation"
-      
+    - arr\.
+    - arranged
+    - arrangement
+    - transcription
+    - adaptation
     drill_indicators:
-      - "drill"
-      - "show"
-      - "halftime"
-      - "field"
-      - "formation"
-      - "animation"
-      
+    - drill
+    - show
+    - halftime
+    - field
+    - formation
+    - animation
     version_indicators:
-      - "v\\d+"
-      - "version"
-      - "draft"
-      - "final"
-      - "revised"
-      - "\\d{4}[-_]\\d{2}[-_]\\d{2}"  # Date stamps
-      
+    - v\d+
+    - version
+    - draft
+    - final
+    - revised
+    - \d{4}[-_]\d{2}[-_]\d{2}
     project_indicators:
-      - "\\b20\\d{2}\\b"   # Years
-      - "fall|spring|summer"
-      - "semester"
-      - "concert"
-      - "recital"
-      - "festival"
-
-# Effort estimation parameters
+    - \b20\d{2}\b
+    - fall|spring|summer
+    - semester
+    - concert
+    - recital
+    - festival
 effort_analysis:
   work_session_max_gap_hours: 4
   minimum_work_session_minutes: 5
-  
   typical_save_intervals:
-    ".musx": 15          # Finale - frequent saves during composition
-    ".mus": 20           # Legacy Finale - less frequent saves
-    ".sib": 15           # Sibelius - frequent saves
-    ".3dj": 10           # Pyware - very frequent saves during drill design
-    ".3dz": 30           # Compressed Pyware - final exports
-    ".pdf": 30           # Document preparation
-    ".docx": 10          # Word processing
-    ".pptx": 20          # Presentation development
-    
+    .musx: 15
+    .mus: 20
+    .sib: 15
+    .3dj: 10
+    .3dz: 30
+    .pdf: 30
+    .docx: 10
+    .pptx: 20
   complexity_multipliers:
-    # File size based complexity (KB)
-    size_small: 1.0      # < 100KB
-    size_medium: 1.3     # 100KB - 1MB  
-    size_large: 1.8      # 1MB - 10MB
-    size_xlarge: 2.5     # > 10MB
-    
-    # Work span based complexity (days)
-    span_single: 1.0     # Same day
-    span_short: 1.2      # 2-7 days
-    span_medium: 1.5     # 1-4 weeks
-    span_long: 2.0       # > 1 month
+    size_small: 1.0
+    size_medium: 1.3
+    size_large: 1.8
+    size_xlarge: 2.5
+    span_single: 1.0
+    span_short: 1.2
+    span_medium: 1.5
+    span_long: 2.0

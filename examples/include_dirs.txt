@@ -1,6 +1,1 @@
-# Put absolute paths or ~
-~/Documents
-~/Desktop
-~/Downloads
-# Folders to scan
-./examples
+/tmp/aef_smoke
