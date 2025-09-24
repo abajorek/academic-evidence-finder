@@ -397,5 +397,9 @@ write_progress(args.out, "processing", pbar.n, total_files, start_ts)
     write_progress(args.out, "done", total_files, total_files, start_ts)
     print(f"Wrote:\n  {evidence_csv}\n  {summary_csv}\n  {report_html}")
 
+    print(f"Scan summary: processed {total_files}, nonempty text {stats['nonempty']}, matched files {stats['matched']}")
+
+    
+
 if __name__ == "__main__":
     main()
