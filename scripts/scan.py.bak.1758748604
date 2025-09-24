@@ -1,11 +1,3 @@
-
-def add_edgar_args(parser):
-    parser.add_argument("--edgar", action="store_true", help="Enable Edgar prank mode")
-    parser.add_argument("--edgar-interval", type=float, default=1.0, help="Seconds between splash prints")
-    parser.add_argument("--edgar-prank", action="store_true", help="Trigger Flagrant System Error loop after run")
-    parser.add_argument("--edgar-splash", action="store_true", help="Show ASCII splash art before scanning")
-    return parser
-
 import argparse, os, re, yaml, mailbox, json, time
 from pathlib import Path
 from datetime import datetime, timezone
@@ -204,23 +196,7 @@ def main():
     ap.add_argument("--modified-until", help="YYYY-MM-DD")
     ap.add_argument("--max-bytes", type=int, default=0)
     ap.add_argument("--only-ext", help="Comma list to override include_extensions (e.g. .pdf,.docx)")
-    add_edgar_args(ap)
     args = ap.parse_args()
-
-    # Edgar HUD (optional)
-    _edgar_cm = None
-    try:
-        if getattr(args, "edgar_splash", False):
-            print("🦆  QUACK! Welcome to Edgar mode.")
-        if getattr(args, "edgar", False):
-            from scripts import edgar
-            _edgar_cm = edgar.edgar_context(
-                interval=getattr(args, "edgar_interval", 0.5),
-                show_splash=getattr(args, "edgar_splash", False)
-            )
-            _edgar_cm.__enter__()
-    except Exception as e:
-        print("Failed to start Edgar prank:", e)
 
     start_ts = time.time()
 
@@ -429,16 +405,6 @@ def main():
     write_progress(args.out, "done", total_files, total_files, start_ts)
     print(f"Wrote:\n  {evidence_csv}\n  {summary_csv}\n  {report_html}")
     print(f"Scan summary: processed {total_files}, nonempty text {stats['nonempty']}, matched files {stats['matched']}")
-
-    if _edgar_cm is not None:
-        _edgar_cm.__exit__(None,None,None)
-    if getattr(args,"edgar_prank",False):
-        try:
-            from scripts.edgar import flagrant_system_error_loop
-            flagrant_system_error_loop()
-        except KeyboardInterrupt:
-            pass
-
 
 
 

@@ -190,14 +190,29 @@ def iter_mbox(paths):
 # ---------- main ----------
 
 def main():
+
     ap = argparse.ArgumentParser()
-    ap.add_argument("--include", nargs="*", help="Directories to scan")
-    ap.add_argument("--include-file", help="File listing directories to scan")
-    ap.add_argument("--path-list", help="File with newline-delimited absolute paths (from Spotlight)")
-    ap.add_argument("--ics", nargs="*", help="ICS files")
-    ap.add_argument("--ics-file", help="File listing ICS paths")
-    ap.add_argument("--mbox", nargs="*", help="MBOX files")
-    ap.add_argument("--mbox-file", help="File listing MBOX paths")
+        ap.add_argument("--include", nargs="*", help="Directories to scan")
+        ap.add_argument("--include-file", help="File listing directories to scan")
+        ap.add_argument("--path-list", help="File with newline-delimited absolute paths (from Spotlight)")
+        ap.add_argument("--ics", nargs="*", help="ICS files")
+        ap.add_argument("--ics-file", help="File listing ICS paths")
+        ap.add_argument("--mbox", nargs="*", help="MBOX files")
+        ap.add_argument("--mbox-file", help="File listing MBOX paths")
+        ap.add_argument("--include", nargs="*", help="Directories to scan")
+        ap.add_argument("--include-file", help="File listing directories to scan")
+        ap.add_argument("--path-list", help="File with newline-delimited absolute paths (from Spotlight)")
+        ap.add_argument("--ics", nargs="*", help="ICS files")
+        ap.add_argument("--ics-file", help="File listing ICS paths")
+        ap.add_argument("--mbox", nargs="*", help="MBOX files")
+        ap.add_argument("--mbox-file", help="File listing MBOX paths")
+        ap.add_argument("--include", nargs="*", help="Directories to scan")
+        ap.add_argument("--include-file", help="File listing directories to scan")
+        ap.add_argument("--path-list", help="File with newline-delimited absolute paths (from Spotlight)")
+        ap.add_argument("--ics", nargs="*", help="ICS files")
+        ap.add_argument("--ics-file", help="File listing ICS paths")
+        ap.add_argument("--mbox", nargs="*", help="MBOX files")
+        ap.add_argument("--mbox-file", help="File listing MBOX paths")
     ap.add_argument("--rules", default=str(Path(__file__).resolve().parents[1] / "config" / "rules.yml"))
     ap.add_argument("--out", default="out", help="Output directory")
     ap.add_argument("--modified-since", help="YYYY-MM-DD")
@@ -206,21 +221,20 @@ def main():
     ap.add_argument("--only-ext", help="Comma list to override include_extensions (e.g. .pdf,.docx)")
     add_edgar_args(ap)
     args = ap.parse_args()
-
-    # Edgar HUD (optional)
+    # Edgar prank support
+    if getattr(args,"edgar_splash",False):
+        print("🦆  QUACK! Welcome to Edgar mode.")
     _edgar_cm = None
-    try:
-        if getattr(args, "edgar_splash", False):
-            print("🦆  QUACK! Welcome to Edgar mode.")
-        if getattr(args, "edgar", False):
+    if getattr(args,"edgar",False):
+        try:
             from scripts import edgar
             _edgar_cm = edgar.edgar_context(
-                interval=getattr(args, "edgar_interval", 0.5),
-                show_splash=getattr(args, "edgar_splash", False)
+                interval=getattr(args,"edgar_interval",1.0),
+                show_splash=getattr(args,"edgar_splash",False)
             )
             _edgar_cm.__enter__()
-    except Exception as e:
-        print("Failed to start Edgar prank:", e)
+        except Exception as e:
+            print("Failed to start Edgar prank:", e)
 
     start_ts = time.time()
 
