@@ -1,11 +1,40 @@
+# Core document processing
 pdfminer.six==20240706
 python-docx==1.1.2
 python-pptx==1.0.2
 docx2txt==0.8
+
+# Configuration and data handling
 PyYAML==6.0.2
+chardet==5.2.0
+
+# Progress bars and UI
 tqdm==4.66.4
+
+# Web scraping and parsing (for email/calendar)
 beautifulsoup4==4.12.3
 lxml==5.2.2
+
+# Calendar and date handling
 icalendar==5.0.13
 python-dateutil==2.9.0
-chardet==5.2.0
+
+# Edgar GUI with authentic retro sound effects
+pygame==2.6.1
+numpy>=1.21.0  # For clean sine wave audio generation
+
+# For the enhanced GUI (if we go beyond basic tkinter)
+# Pillow==10.4.0  # Uncomment if we need image processing for GUI
+
+# Optional: Enhanced file metadata analysis
+# python-magic==0.4.27  # Uncomment for better file type detection
+# mutagen==1.47.0       # Uncomment for audio file metadata
+
+# Development and testing (optional)
+# pytest==8.3.4
+# pytest-cov==6.0.0
+
+# For potential future enhancements
+# nltk==3.9.1           # Natural language processing for better text analysis
+# scikit-learn==1.5.2  # Machine learning for smart categorization
+# pandas==2.2.3        # Data analysis for reporting
