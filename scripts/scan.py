@@ -260,10 +260,12 @@ def main():
 
     rows = []
     PROPRIETARY_HINTS = {".sib", ".musx", ".mus", ".ftmx", ".ftm", ".3dj", ".3dz", ".3da", ".prod"}
-
+    
     pbar = tqdm(total=total_files, desc="Processing files", unit="file", dynamic_ncols=True,
                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]")
 
+    stats = Counter(nonempty=0, empty=0, matched=0)
+    
     for path in files_to_scan:
         base = os.path.basename(path)
         if len(base) > 45: base = base[:42] + "..."
@@ -277,45 +279,63 @@ def main():
             write_progress(args.out, "processing", pbar.n, total_files, start_ts)
             continue
 
-        ext = os.path.splitext(base.lower())[1]
-        text = extract_text(path)
-        if not text and ext in PROPRIETARY_HINTS:
-            text = base.lower()
+ext = os.path.splitext(base.lower())[1]
+text = extract_text(path)
 
-        if text:
-            for cat, subs in compiled.items():
-                for sub, pats in subs.items():
-                    score, hits = score_text(text, pats, per_hit, cap)
-                    if score > 0:
-                        wmult = float(cat_w.get(cat, 1.0)) if isinstance(cat_w, dict) else 1.0
-                        bsum = 0.0
-                        if isinstance(bonus, dict):
-                            for k, pts in bonus.items():
-                                try:
-                                    if k and re.search(re.escape(k), text, re.IGNORECASE):
-                                        bsum += float(pts)
-                                except Exception:
-                                    pass
-                        adj_score = score * wmult + bsum
-                        if float(adj_score).is_integer():
-                            adj_score = int(adj_score)
-                        rows.append({
-                            "source": "files",
-                            "path": path,
-                            "display": path,
-                            "category": cat,
-                            "subcategory": sub,
-                            "hits": hits,
-                            "score": adj_score,
-                            "meta": f"mtime {datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()}",
-                            "when": iso_date_from_epoch(st.st_mtime),
-                        })
+# Treat known “proprietary hint” extensions as text = filename when extractor returns empty
+if not text and ext in PROPRIETARY_HINTS:
+    text = base.lower()
 
-        dt = time.perf_counter() - t0
-        pbar.set_postfix_str(f"{dt:.2f}s")
-        pbar.update(1)
-        write_progress(args.out, "processing", pbar.n, total_files, start_ts)
+# Track whether we got any text at all
+if text and text.strip():
+    stats["nonempty"] += 1
+else:
+    stats["empty"] += 1
+    # Still update progress HUD and move on (no text to score)
+    dt = time.perf_counter() - t0
+    pbar.set_postfix_str(f"{dt:.2f}s txt:{stats['nonempty']}/{pbar.n+1} hit:{stats['matched']}")
+    pbar.update(1)
+    write_progress(args.out, "processing", pbar.n, total_files, start_ts)
+    continue
 
+# Score text against rules
+hit_this_file = False
+for cat, subs in compiled.items():
+    for sub, pats in subs.items():
+        score, hits = score_text(text, pats, per_hit, cap)
+        if score > 0:
+            hit_this_file = True
+            wmult = float(cat_w.get(cat, 1.0)) if isinstance(cat_w, dict) else 1.0
+            bsum = 0.0
+            if isinstance(bonus, dict):
+                for k, pts in bonus.items():
+                    try:
+                        if k and re.search(re.escape(k), text, re.IGNORECASE):
+                            bsum += float(pts)
+                    except Exception:
+                        pass
+            adj_score = score * wmult + bsum
+            if float(adj_score).is_integer():
+                adj_score = int(adj_score)
+            rows.append({
+                "source": "files",
+                "path": path,
+                "display": path,
+                "category": cat,
+                "subcategory": sub,
+                "hits": hits,
+                "score": adj_score,
+                "meta": f"mtime {datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()}",
+                "when": iso_date_from_epoch(st.st_mtime),
+            })
+
+if hit_this_file:
+    stats["matched"] += 1
+
+dt = time.perf_counter() - t0
+pbar.set_postfix_str(f"{dt:.2f}s txt:{stats['nonempty']}/{pbar.n+1} hit:{stats['matched']}")
+pbar.update(1)
+write_progress(args.out, "processing", pbar.n, total_files, start_ts)
     pbar.close()
 
     if ics_paths:
