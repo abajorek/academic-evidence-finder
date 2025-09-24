@@ -1,496 +1,147 @@
+# Enhanced rules.yml with music notation and drill design file support
+
 categories:
   Teaching:
-    Syllabi:
-      any:
-        - "\\bsyllabus\\b"
-        - "course description"
-        - "attendance policy"
-        - "learning outcome(s?)"
-        - "grading scale"
-        - "late policy"
-        - "academic integrity"
-        - "prerequisite"
-        - "course objectives"
-        - "grading criteria"
-        - "class schedule"
-        - "required materials"
-        - "accommodations policy"
+    # ... keep all your existing Teaching categories ...
     
-    Assignments & Rubrics:
+    Music_Creation_Teaching:
       any:
-        - "\\bassignment\\b"
-        - "\\brubric\\b"
-        - "points possible"
-        - "submission instructions"
-        - "grading rubric"
-        - "assessment criteria"
-        - "performance standards"
-        - "learning assessment"
-        - "evaluation form"
-        - "scoring guide"
-        - "feedback form"
-    
-    Assessment/Evals:
-      any:
-        - "student evaluation of teaching"
-        - "\\bSET\\b"
-        - "IDEA survey"
-        - "course evaluation"
-        - "teaching evaluation"
-        - "Brightspace|D2L|Canvas export"
-        - "gradebook export"
-        - "final grades"
-        - "midterm feedback"
-        - "student feedback"
-        - "teaching assessment"
-        - "instructor rating"
-    
-    Lesson Plans & Materials:
-      any:
-        - "\\blesson plan\\b"
-        - "\\blecture\\b"
-        - "\\bslides?\\b"
-        - "\\bquiz\\b"
-        - "\\banswer key\\b"
-        - "rehearsal plan"
-        - "warm-up routine"
-        - "sectional plan"
-        - "practice schedule"
-        - "repertoire list"
-        - "music selection"
-        - "sight reading"
-        - "scale studies"
-        - "technique exercises"
-        - "fundamentals"
-        - "ensemble literature"
-        - "concert program"
-        - "recital program"
-    
-    Music Education Specific:
-      any:
-        - "music theory"
-        - "music history"
-        - "conducting technique"
         - "score study"
-        - "ensemble technique"
-        - "instrument pedagogy"
-        - "music appreciation"
-        - "aural skills"
-        - "sight singing"
-        - "keyboard skills"
+        - "musical analysis" 
+        - "composition lesson"
+        - "arranging technique"
+        - "orchestration"
+        - "music theory application"
+        - "notation software"
+        - "Finale tutorial"
+        - "Sibelius instruction"
         - "music technology"
-        - "composition"
-        - "arranging"
-        - "jazz studies"
-        - "world music"
-        - "music therapy"
-    
-    Band Program Teaching:
+        - "MIDI sequencing"
+        - "digital audio workstation"
+        - "score preparation"
+        - "parts extraction"
+        - "transposition"
+        
+    Drill_Design_Teaching:
       any:
-        - "marching band"
-        - "concert band"
-        - "wind ensemble"
-        - "jazz band"
-        - "pep band"
-        - "basketball band"
-        - "athletic bands"
-        - "wind symphony"
-        - "brass ensemble"
-        - "woodwind ensemble"
-        - "percussion ensemble"
-        - "chamber music"
-        - "brass quintet"
-        - "woodwind quintet"
-        - "saxophone quartet"
-        - "flute choir"
-        - "clarinet choir"
-        - "brass choir"
-    
-    Advising/Recruitment:
-      any:
-        - "\\badvis(ing|or)\\b"
-        - "recruitment"
-        - "audition"
-        - "marching band registration"
-        - "music scholarship"
-        - "prospective student"
-        - "high school visit"
-        - "music camp"
-        - "masterclass"
-        - "clinic"
-        - "honor band"
-        - "all-state"
-        - "festival"
-        - "competition"
-        - "adjudication"
-        - "student mentoring"
-        - "career guidance"
-        - "graduate school prep"
-        - "teacher placement"
+        - "drill design"
+        - "marching technique"
+        - "field choreography"
+        - "formation design"
+        - "Pyware instruction"
+        - "3D animation"
+        - "drill writing"
+        - "marching fundamentals"
+        - "visual design"
+        - "field coverage"
+        - "transition design"
+        - "coordinate system"
+        - "yard line reference"
+        - "step size"
+        - "tempo mapping"
 
   Service:
-    Committees:
-      any:
-        - "\\bcommittee\\b"
-        - "agenda"
-        - "minutes"
-        - "motion carried"
-        - "meeting invite"
-        - "Zoom link"
-        - "faculty senate"
-        - "curriculum committee"
-        - "search committee"
-        - "tenure committee"
-        - "promotion committee"
-        - "assessment committee"
-        - "budget committee"
-        - "safety committee"
-        - "student affairs"
-        - "academic standards"
-        - "admissions committee"
-        - "scholarship committee"
-        - "diversity committee"
-        - "strategic planning"
-        - "accreditation"
-        - "NASM"
-        - "program review"
+    # ... keep existing Service categories ...
     
-    Music Department Service:
+    Creative_Production_Service:
       any:
-        - "ensemble coordination"
-        - "concert coordination"
-        - "music library"
-        - "instrument maintenance"
-        - "instrument inventory"
-        - "equipment management"
-        - "rehearsal scheduling"
-        - "venue coordination"
-        - "music purchase"
+        - "halftime show design"
+        - "field show production"
+        - "music arrangement"
+        - "custom arrangement"
+        - "score preparation"
+        - "parts preparation" 
+        - "music library management"
         - "copyright clearance"
-        - "performance rights"
-        - "ASCAP"
-        - "BMI"
-        - "music licensing"
-        - "recording permissions"
-        - "livestream setup"
-        - "sound engineering"
-        - "audio recording"
-        - "video production"
-    
-    Administrative Service:
-      any:
-        - "assessment report"
-        - "program review"
-        - "budget request"
-        - "scheduling"
-        - "inventory"
-        - "course scheduling"
-        - "room assignment"
-        - "facility management"
-        - "budget planning"
-        - "financial report"
-        - "expenditure tracking"
-        - "purchase order"
-        - "vendor coordination"
-        - "travel arrangements"
-        - "transportation"
-        - "hotel reservations"
-        - "meal planning"
-        - "uniform management"
-        - "costume coordination"
-        - "instrument rental"
-        - "equipment lease"
-        - "insurance forms"
-        - "liability waivers"
-        - "medical forms"
-        - "emergency contacts"
-    
-    Events & Outreach:
-      any:
-        - "parents' weekend"
-        - "\\balumni\\b"
-        - "\\bopen house\\b"
-        - "community outreach"
-        - "hosting"
-        - "judging"
-        - "homecoming"
-        - "commencement"
-        - "graduation ceremony"
-        - "pep rally"
-        - "football game"
-        - "basketball game"
-        - "athletic event"
-        - "parade"
-        - "festival performance"
-        - "community concert"
-        - "school visit"
-        - "clinic presentation"
-        - "masterclass hosting"
-        - "guest artist"
-        - "resident artist"
-        - "fundraising"
-        - "donor relations"
-        - "sponsor coordination"
-        - "media relations"
-        - "press release"
-        - "social media"
-        - "program notes"
-        - "concert program"
-        - "marketing materials"
-    
-    Professional Service:
-      any:
-        - "peer review"
-        - "manuscript review"
-        - "journal review"
-        - "conference review"
-        - "grant review"
-        - "tenure review"
-        - "promotion review"
-        - "external review"
-        - "accreditation visit"
-        - "site visit"
-        - "consultant"
-        - "advisory board"
-        - "editorial board"
-        - "professional organization"
-        - "CBDNA"
-        - "NBA"
-        - "NAfME"
-        - "CMS"
-        - "TMEA"
-        - "state music"
-        - "music educators"
-        - "band directors"
-        - "conducting symposium"
-        - "music conference"
-        - "workshop presenter"
-        - "clinician"
-        - "adjudicator"
-        - "festival judge"
-        - "competition judge"
+        - "performance licensing"
+        - "ASCAP reporting"
+        - "BMI licensing"
+        - "drill design service"
+        - "guest arrangement"
+        - "commissioned work"
 
   Scholarship:
-    Publications:
-      any:
-        - "\\bdoi:\\s*10\\."
-        - "\\bISSN\\b"
-        - "manuscript submitted"
-        - "\\breferences\\b"
-        - "accepted for publication"
-        - "peer reviewed"
-        - "journal article"
-        - "book chapter"
-        - "monograph"
-        - "encyclopedia entry"
-        - "review article"
-        - "editorial"
-        - "opinion piece"
-        - "research paper"
-        - "scholarly article"
-        - "academic publication"
-        - "music education"
-        - "band literature"
-        - "conducting pedagogy"
-        - "music theory"
-        - "music history"
-        - "performance practice"
-        - "wind band"
-        - "brass band"
-        - "community band"
-        - "school band"
-        - "marching band history"
-        - "instrument pedagogy"
+    # ... keep existing Scholarship categories ...
     
-    Presentations:
+    Musical_Compositions:
       any:
-        - "\\bconference\\b"
-        - "\\babstract\\b"
-        - "\\bprogram\\b"
-        - "\\bposter\\b"
-        - "\\bproceedings\\b"
-        - "accepted to present"
-        - "keynote"
-        - "plenary session"
-        - "panel discussion"
-        - "roundtable"
-        - "workshop"
-        - "masterclass"
-        - "clinic"
-        - "demonstration"
-        - "lecture recital"
-        - "research presentation"
-        - "CBDNA conference"
-        - "NAfME conference"
-        - "state music conference"
-        - "regional conference"
-        - "national conference"
-        - "international conference"
-        - "symposium"
-        - "summit"
-        - "colloquium"
-        - "seminar"
-        - "webinar"
-        - "online presentation"
-        - "virtual conference"
-    
-    Creative Works:
-      any:
-        - "composition"
-        - "arrangement"
-        - "transcription"
-        - "orchestration"
-        - "original work"
-        - "commissioned work"
-        - "premiere"
+        - "original composition"
+        - "commissioned piece"
+        - "premiere performance"
         - "world premiere"
         - "regional premiere"
-        - "first performance"
-        - "musical score"
-        - "sheet music"
-        - "published music"
-        - "music publisher"
-        - "copyright"
-        - "performance rights"
-        - "recording"
-        - "album"
-        - "CD"
-        - "digital release"
-        - "streaming"
-        - "music video"
-        - "documentary"
-        - "educational video"
-        - "instructional materials"
-        - "method book"
-        - "etude book"
-        - "study guide"
-        - "curriculum guide"
-        - "drill design"
-        - "show design"
-        - "halftime show"
-        - "field show"
-        - "parade arrangement"
-        - "pep tune"
-        - "fight song"
-        - "school song"
-        - "alma mater"
+        - "musical work"
+        - "concert piece"
+        - "chamber work"
+        - "solo piece"
+        - "ensemble piece"
+        - "wind band composition"
+        - "concert band piece"
+        - "marching band arrangement"
         - "ceremonial music"
-    
-    Performances:
+        - "processional"
+        - "fanfare"
+        - "overture"
+        
+    Music_Arrangements:
       any:
-        - "guest conductor"
-        - "guest artist"
-        - "solo performance"
-        - "chamber performance"
-        - "orchestra performance"
-        - "band performance"
-        - "recital"
-        - "concert"
-        - "festival performance"
-        - "competition performance"
-        - "masterclass performance"
-        - "clinic performance"
-        - "demonstration performance"
-        - "recording session"
-        - "studio recording"
-        - "live recording"
-        - "broadcast performance"
-        - "radio performance"
-        - "television performance"
-        - "streaming performance"
-        - "virtual performance"
-        - "outdoor concert"
-        - "indoor concert"
-        - "formal concert"
-        - "informal performance"
-        - "community performance"
-        - "professional performance"
-        - "amateur performance"
-        - "student performance"
-        - "faculty performance"
-        - "collaborative performance"
-        - "interdisciplinary performance"
-    
-    Grants/IRB:
+        - "musical arrangement"
+        - "transcription"
+        - "adaptation"
+        - "orchestration"
+        - "re-orchestration"
+        - "instrumentation"
+        - "wind band arrangement"
+        - "concert band arrangement"
+        - "marching band arrangement"
+        - "pep band arrangement"
+        - "jazz arrangement"
+        - "popular music arrangement"
+        - "traditional arrangement"
+        - "folk song arrangement"
+        - "hymn arrangement"
+        - "patriotic arrangement"
+        
+    Drill_Design_Works:
       any:
-        - "\\bIRB\\b"
-        - "\\bprotocol\\b"
-        - "\\bgrant\\b"
-        - "budget justification"
-        - "scope of work"
-        - "research proposal"
-        - "funding application"
-        - "fellowship application"
-        - "sabbatical application"
-        - "travel grant"
-        - "research grant"
-        - "equipment grant"
-        - "program grant"
-        - "teaching grant"
-        - "innovation grant"
-        - "technology grant"
-        - "diversity grant"
-        - "student support grant"
-        - "faculty development"
-        - "professional development"
-        - "conference funding"
-        - "research funding"
-        - "equipment funding"
-        - "program funding"
-        - "institutional funding"
-        - "external funding"
-        - "federal funding"
-        - "state funding"
-        - "private funding"
-        - "foundation grant"
-        - "corporate sponsorship"
-        - "endowment funding"
-        - "scholarship funding"
-        - "award letter"
-        - "grant notification"
-        - "funding confirmation"
-    
-    Research Activities:
+        - "drill design"
+        - "field show design"
+        - "marching show"
+        - "halftime show"
+        - "competition show"
+        - "parade formation"
+        - "ceremonial formation"
+        - "visual design"
+        - "3D drill animation"
+        - "field choreography"
+        - "formation design"
+        - "drill innovation"
+        - "visual effect"
+        - "prop integration"
+        - "color guard integration"
+        
+    Music_Technology_Research:
       any:
-        - "research design"
-        - "methodology"
-        - "data collection"
-        - "data analysis"
-        - "statistical analysis"
-        - "qualitative research"
-        - "quantitative research"
-        - "mixed methods"
-        - "survey research"
-        - "interview research"
-        - "ethnographic research"
-        - "case study"
-        - "action research"
-        - "experimental design"
-        - "control group"
-        - "treatment group"
-        - "research ethics"
-        - "informed consent"
-        - "participant recruitment"
-        - "research protocol"
-        - "literature review"
-        - "theoretical framework"
-        - "research question"
-        - "hypothesis"
-        - "research objective"
-        - "research aim"
-        - "research scope"
-        - "research timeline"
-        - "research budget"
-        - "research team"
-        - "research collaboration"
-        - "research partnership"
-        - "research network"
+        - "music notation software"
+        - "digital music creation"
+        - "MIDI technology"
+        - "music software development"
+        - "audio production"
+        - "music app development"
+        - "educational technology"
+        - "music learning software"
+        - "rehearsal technology"
+        - "performance technology"
+        - "music distribution"
+        - "streaming optimization"
 
+# Enhanced file filters to include music and drill design files
 file_filters:
   include_extensions:
+    # Document formats
     - ".pdf"
     - ".docx"
-    - ".pptx"
+    - ".pptx" 
     - ".txt"
     - ".doc"
     - ".rtf"
@@ -508,6 +159,31 @@ file_filters:
     - ".html"
     - ".htm"
     - ".xml"
+    
+    # Music notation files
+    - ".mus"        # Finale legacy
+    - ".musx"       # Finale current
+    - ".sib"        # Sibelius
+    - ".ftm"        # Finale template
+    - ".ftmx"       # Finale template current
+    - ".musicxml"   # MusicXML
+    - ".mxl"        # Compressed MusicXML
+    - ".xml"        # Generic XML (includes MusicXML)
+    
+    # Drill design files (Pyware)
+    - ".3dj"        # Pyware project file
+    - ".3dz"        # Pyware compressed project
+    - ".3da"        # Pyware animation file
+    - ".prod"       # Pyware production file
+    
+    # Audio/MIDI files (for reference/documentation)
+    - ".mid"        # MIDI
+    - ".midi"       # MIDI
+    - ".mp3"        # Audio reference
+    - ".wav"        # Audio reference
+    - ".aif"        # Audio reference
+    - ".m4a"        # Audio reference
+    
   exclude_dirs:
     - ".git"
     - "node_modules"
@@ -523,43 +199,158 @@ file_filters:
     - "old"
     - "deleted"
     - "trash"
+    - "Finale Backups"      # Finale auto-backup folder
+    - "Sibelius Backups"    # Sibelius auto-backup folder
+    - "Pyware Backups"      # Pyware backup folder
 
+# Enhanced scoring with music/drill specific bonuses
 scoring:
   per_hit_points: 1
-  cap_per_file: 15
+  cap_per_file: 25          # Higher cap for complex creative files
   category_weights:
     Teaching: 1.0
-    Service: 1.0
-    Scholarship: 1.2
+    Service: 1.1
+    Scholarship: 1.3        # Higher weight for creative scholarship
+    
   bonus_keywords:
-    - "NASM": 3
-    - "accreditation": 3
-    - "tenure": 5
-    - "promotion": 5
-    - "peer review": 3
-    - "published": 4
-    - "conference presentation": 4
-    - "grant award": 5
-    - "fellowship": 4
-    - "sabbatical": 4
-    - "CBDNA": 3
-    - "NAfME": 3
-    - "original composition": 5
-    - "commissioned work": 5
-    - "world premiere": 4
-    - "guest conductor": 3
-    - "masterclass": 3
-    - "clinic": 2
-    - "adjudicator": 2
-    - "festival judge": 2
-    - "honor band": 3
-    - "all-state": 3
-    - "national conference": 4
-    - "international conference": 5
-    - "keynote": 5
-    - "plenary": 4
-    - "editorial board": 4
-    - "manuscript review": 3
-    - "external review": 4
-    - "consultant": 3
-    - "advisory board": 3
+    # Existing bonuses
+    "NASM": 3
+    "accreditation": 3
+    "tenure": 5
+    "promotion": 5
+    "peer review": 3
+    "published": 4
+    "conference presentation": 4
+    "grant award": 5
+    "fellowship": 4
+    "sabbatical": 4
+    "CBDNA": 3
+    "NAfME": 3
+    
+    # Music creation bonuses
+    "original composition": 8
+    "commissioned work": 8
+    "world premiere": 6
+    "premiere performance": 5
+    "musical arrangement": 4
+    "transcription": 3
+    "orchestration": 4
+    
+    # Drill design bonuses  
+    "drill design": 6
+    "field show design": 7
+    "halftime show": 5
+    "marching band show": 5
+    "3D animation": 4
+    "Pyware": 3
+    
+    # Music technology bonuses
+    "Finale": 2
+    "Sibelius": 2
+    "music notation": 3
+    "MusicXML": 2
+    "MIDI": 2
+    
+    # Professional activity bonuses
+    "guest conductor": 4
+    "masterclass": 3
+    "clinic": 3
+    "adjudicator": 3
+    "festival judge": 3
+    "honor band": 4
+    "all-state": 4
+    
+    # High-impact scholarship bonuses
+    "national conference": 5
+    "international conference": 6
+    "keynote": 7
+    "plenary": 6
+    "editorial board": 5
+    "manuscript review": 4
+    "external review": 4
+    "grant funded": 6
+    
+    # Institution specific
+    "Colorado Mesa": 2
+    "CMEA": 3
+    "Western Division": 4
+
+# File type specific processing hints
+file_processing:
+  # Files that need special text extraction
+  proprietary_formats:
+    - ".mus"
+    - ".musx" 
+    - ".sib"
+    - ".3dj"
+    - ".3dz"
+    - ".3da" 
+    - ".prod"
+  
+  # For proprietary formats, use filename and metadata for categorization
+  filename_analysis:
+    composition_indicators:
+      - "original"
+      - "composition"
+      - "op\\s*\\d+"      # Opus numbers
+      - "mvt\\s*\\d+"     # Movement numbers
+      - "no\\s*\\d+"      # Number designations
+      
+    arrangement_indicators:
+      - "arr\\."
+      - "arranged"
+      - "arrangement"
+      - "transcription"
+      - "adaptation"
+      
+    drill_indicators:
+      - "drill"
+      - "show"
+      - "halftime"
+      - "field"
+      - "formation"
+      - "animation"
+      
+    version_indicators:
+      - "v\\d+"
+      - "version"
+      - "draft"
+      - "final"
+      - "revised"
+      - "\\d{4}[-_]\\d{2}[-_]\\d{2}"  # Date stamps
+      
+    project_indicators:
+      - "\\b20\\d{2}\\b"   # Years
+      - "fall|spring|summer"
+      - "semester"
+      - "concert"
+      - "recital"
+      - "festival"
+
+# Effort estimation parameters
+effort_analysis:
+  work_session_max_gap_hours: 4
+  minimum_work_session_minutes: 5
+  
+  typical_save_intervals:
+    ".musx": 15          # Finale - frequent saves during composition
+    ".mus": 20           # Legacy Finale - less frequent saves
+    ".sib": 15           # Sibelius - frequent saves
+    ".3dj": 10           # Pyware - very frequent saves during drill design
+    ".3dz": 30           # Compressed Pyware - final exports
+    ".pdf": 30           # Document preparation
+    ".docx": 10          # Word processing
+    ".pptx": 20          # Presentation development
+    
+  complexity_multipliers:
+    # File size based complexity (KB)
+    size_small: 1.0      # < 100KB
+    size_medium: 1.3     # 100KB - 1MB  
+    size_large: 1.8      # 1MB - 10MB
+    size_xlarge: 2.5     # > 10MB
+    
+    # Work span based complexity (days)
+    span_single: 1.0     # Same day
+    span_short: 1.2      # 2-7 days
+    span_medium: 1.5     # 1-4 weeks
+    span_long: 2.0       # > 1 month
