@@ -55,6 +55,9 @@ class EdgarGUI:
         self.setup_pygame_audio()
         self.create_widgets()
         self.setup_styles()
+        self.duck_animation_job = None
+        self.current_duck_frame = 0
+        self.duck_frames = []
         
     def setup_window(self):
         """Configure the main window with retro styling"""
@@ -123,7 +126,7 @@ class EdgarGUI:
     def setup_styles(self):
         """Configure ttk styles for that sweet, sweet retro look"""
         style = ttk.Style()
-        
+
         # Configure frame styles
         style.configure("Edgar.TFrame", 
                        background="#000000",
@@ -145,6 +148,13 @@ class EdgarGUI:
                        background="#000000",
                        foreground="#FFFF00",
                        font=(self.font_family, 9))
+
+        style.configure("Edgar.Horizontal.TProgressbar",
+                       troughcolor="#001100",
+                       background="#00FF00",
+                       bordercolor="#003300",
+                       lightcolor="#00FF00",
+                       darkcolor="#009900")
     
     def create_widgets(self):
         """Create all GUI widgets (the boring part, but necessary I guess)"""
@@ -157,10 +167,10 @@ class EdgarGUI:
         
         # Control panels
         self.create_mode_panel(main_frame)
-        self.create_year_panel(main_frame) 
+        self.create_year_panel(main_frame)
         self.create_directory_panel(main_frame)
         self.create_scan_panel(main_frame)
-        
+
         # Status and progress
         self.create_status_panel(main_frame)
         
@@ -321,7 +331,7 @@ class EdgarGUI:
         """Create status and progress panel (where the magic words appear)"""
         status_frame = ttk.LabelFrame(parent, text=" SYSTEM STATUS (What's happening now) ", style="Edgar.TFrame")
         status_frame.pack(fill="both", expand=True, pady=5)
-        
+
         # Status text area (the scrolling terminal goodness)
         text_frame = tk.Frame(status_frame, bg="#000000")
         text_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -341,13 +351,27 @@ class EdgarGUI:
         
         self.status_text.config(yscrollcommand=status_scrollbar.set)
         status_scrollbar.config(command=self.status_text.yview)
-        
+
         # Progress indicator
         self.progress_var = tk.StringVar()
-        self.progress_label = ttk.Label(status_frame, textvariable=self.progress_var,
+        controls_frame = tk.Frame(status_frame, bg="#000000")
+        controls_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        self.progress_label = ttk.Label(controls_frame, textvariable=self.progress_var,
                                        style="Status.TLabel")
-        self.progress_label.pack(pady=(0, 10))
-        
+        self.progress_label.pack(side="left")
+
+        self.progress_bar = ttk.Progressbar(controls_frame, style="Edgar.Horizontal.TProgressbar",
+                                            mode="determinate", length=350)
+        self.progress_bar.pack(side="left", padx=20, fill="x", expand=True)
+
+        self.duck_label = tk.Label(controls_frame, bg="#000000")
+        self.duck_label.pack(side="right")
+
+        self.duck_frames = self.create_duck_frames()
+        if self.duck_frames:
+            self.duck_label.config(image=self.duck_frames[0])
+
         # Initial status
         self.log_message("EDGAR ACADEMIC EVIDENCE SCANNER INITIALIZED")
         self.log_message("Status: Ready to scan some files, I guess...")
@@ -357,7 +381,96 @@ class EdgarGUI:
             self.log_message("Audio disabled. Silent but still deadly.")
         self.log_message("Tip: This thing actually works, which is more than we can say for most software.")
         self.progress_var.set("Status: READY (and slightly sarcastic)")
-    
+
+    def create_duck_frames(self):
+        """Build adorable retro duck animation frames for the status bar"""
+        duck_patterns = [
+            [
+                "000000011100000000",
+                "000000111110000000",
+                "000001111111000000",
+                "000011111111100100",
+                "000111111111110110",
+                "000111111111110110",
+                "000011111111111000",
+                "000001111111110000",
+                "000000111111100000",
+                "000000011111000000",
+                "000000111111100000",
+                "000000110111000000",
+                "000001100111100000",
+                "000011100110110000",
+                "000011000000110000",
+                "000001100001100000",
+                "000000011111000000",
+                "000000001110000000",
+            ],
+            [
+                "000000000111000000",
+                "000000001111100000",
+                "000000011111110000",
+                "000000111111111000",
+                "000001111111111100",
+                "000001111111111100",
+                "000000111111111000",
+                "000000011111110000",
+                "000000001111100000",
+                "000000011111100000",
+                "000000011011100000",
+                "000000111001111000",
+                "000001110001101100",
+                "000001100000001100",
+                "000011100000011000",
+                "000001110000110000",
+                "000000111111100000",
+                "000000011111000000",
+            ],
+        ]
+
+        frames = []
+        for pattern in duck_patterns:
+            height = len(pattern)
+            width = len(pattern[0])
+            image = tk.PhotoImage(width=width, height=height)
+
+            for y, row in enumerate(pattern):
+                for x, char in enumerate(row):
+                    color = "#FFD447" if char == "1" else "#000000"
+                    image.put(color, (x, y))
+
+            # Scale the sprite up for better visibility
+            frames.append(image.zoom(4, 4))
+
+        return frames
+
+    def start_duck_animation(self):
+        """Kick off the duck status animation"""
+        if not self.duck_frames:
+            return
+
+        if self.duck_animation_job is None:
+            self.duck_animation_job = self.root.after(0, self.animate_duck)
+
+    def stop_duck_animation(self):
+        """Stop the duck animation and reset to the first frame"""
+        if self.duck_animation_job is not None:
+            self.root.after_cancel(self.duck_animation_job)
+            self.duck_animation_job = None
+
+        if self.duck_frames:
+            self.current_duck_frame = 0
+            self.duck_label.config(image=self.duck_frames[0])
+
+    def animate_duck(self):
+        """Animate the duck sprite while scans are running"""
+        if not self.scanning or not self.duck_frames:
+            self.duck_animation_job = None
+            return
+
+        self.current_duck_frame = (self.current_duck_frame + 1) % len(self.duck_frames)
+        self.duck_label.config(image=self.duck_frames[self.current_duck_frame])
+        self.duck_animation_job = self.root.after(250, self.animate_duck)
+
     def start_retro_effects(self):
         """Start background retro effects (the atmospheric stuff)"""
         self.animate_scanner()
@@ -456,7 +569,14 @@ class EdgarGUI:
         self.scanning = True
         self.scan_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
-        
+
+        if hasattr(self, "progress_bar"):
+            self.progress_bar.stop()
+            self.progress_bar.config(mode="determinate", maximum=100)
+            self.progress_bar["value"] = 0
+
+        self.start_duck_animation()
+
         # Play scan initiation sound sequence
         self.play_beep(1200, 200)
         time.sleep(0.1)
@@ -487,10 +607,14 @@ class EdgarGUI:
             # Build year filter arguments
             year_start = f"{min(years)}-01-01"
             year_end = f"{max(years)}-12-31"
-            
+
             # Simulate scan progress with retro effects and commentary
             self.simulate_scan_progress()
-            
+
+            if hasattr(self, "progress_bar"):
+                self.progress_bar.config(mode="indeterminate")
+                self.progress_bar.start(120)
+
             # Build command based on mode
             script_dir = Path(__file__).parent
             
@@ -659,10 +783,15 @@ class EdgarGUI:
         finally:
             # Reset UI state
             self.scanning = False
-            self.scan_btn.config(state="normal") 
+            self.scan_btn.config(state="normal")
             self.stop_btn.config(state="disabled")
+            if hasattr(self, "progress_bar"):
+                self.progress_bar.stop()
+                self.progress_bar.config(mode="determinate", maximum=100)
+                self.progress_bar["value"] = 0
+            self.stop_duck_animation()
             self.progress_var.set("Status: READY (and hopefully wiser)")
-    
+
     def simulate_scan_progress(self):
         """Simulate retro scan progress display (the theatrical part)"""
         scan_steps = [
@@ -674,7 +803,7 @@ class EdgarGUI:
             "Engaging pattern matching engines...",
             "Beginning systematic file analysis..."
         ]
-        
+
         step_comments = [
             "This always takes longer than it should.",
             "Lots of fancy words for 'getting ready'.",
@@ -684,14 +813,22 @@ class EdgarGUI:
             "Pattern matching: finding needles in haystacks since 1982.",
             "And here... we... go!"
         ]
-        
+
+        total_steps = len(scan_steps)
+        if hasattr(self, "progress_bar"):
+            self.progress_bar.config(mode="determinate", maximum=total_steps)
+            self.progress_bar["value"] = 0
+
         for i, step in enumerate(scan_steps):
             self.log_message(step)
             if i < len(step_comments):
                 self.log_message(f"   ({step_comments[i]})")
-            
+
             self.progress_var.set(f"Status: {step}")
-            
+            if hasattr(self, "progress_bar"):
+                self.progress_bar["value"] = i + 1
+                self.progress_bar.update_idletasks()
+
             # Retro progress animation with varying beeps
             for j in range(2):
                 self.play_beep(400 + j * 200 + i * 50, 80)
@@ -708,7 +845,12 @@ class EdgarGUI:
         self.scanning = False
         self.scan_btn.config(state="normal")
         self.stop_btn.config(state="disabled")
-        
+        if hasattr(self, "progress_bar"):
+            self.progress_bar.stop()
+            self.progress_bar.config(mode="determinate", maximum=100)
+            self.progress_bar["value"] = 0
+        self.stop_duck_animation()
+
         self.log_message("SCAN ABORTED BY USER")
         self.log_message("Well, that was fun while it lasted.")
         self.play_beep(300, 400)  # Abort sound (sad trombone)
