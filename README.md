@@ -236,3 +236,5 @@ Ready to find some academic evidence? Choose your weapon:
 - 🎮 **Edgar GUI**: `python scripts/edgar_gui.py` 
 - ⚡ **Optimized**: `python scripts/scan_optimized.py --help`
 - 🖥️ **Classic**: `python scripts/scan.py --help`
+
+
