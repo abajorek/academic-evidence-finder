@@ -23,13 +23,30 @@ from pathlib import Path
 class EdgarGUI:
     def __init__(self):
         self.root = tk.Tk()
-        
+
         # Initialize configuration FIRST (before creating widgets)
         self.current_scan_process = None
         self.scanning = False
         self.selected_years = []
         self.scan_mode = "pass1"  # pass1, pass2, full
         self.selected_directories = []
+
+        # Retro palette inspired by early 80s shareware splash screens
+        self.palette = {
+            "background": "#05020c",
+            "panel": "#0b0418",
+            "outer_border": "#7f102a",
+            "inner_border": "#f5d90a",
+            "accent_green": "#66ff66",
+            "accent_magenta": "#ff4dd2",
+            "accent_cyan": "#48e0ff",
+            "accent_red": "#ff5555",
+            "text_primary": "#f5d90a",
+            "text_secondary": "#66ff66",
+            "text_status": "#f8ff9c",
+            "progress_trough": "#1a102f",
+            "progress_bar": "#ff6b35",
+        }
         
         # Random Homestar Runner-esque status messages
         self.homestar_messages = [
@@ -68,9 +85,9 @@ class EdgarGUI:
         """Configure the main window with retro styling"""
         self.root.title("Edgar Academic Evidence Scanner v2.1982 - \"It's like, totally authentic or whatever\"")
         self.root.geometry("1000x800")  # Made bigger
-        self.root.configure(bg='#000000')
+        self.root.configure(bg=self.palette["background"])
         self.root.resizable(True, True)  # Made resizable
-        
+
         # Set minimum size
         self.root.minsize(900, 700)
         
@@ -79,6 +96,10 @@ class EdgarGUI:
             self.font_family = "Consolas"
         except:
             self.font_family = "Courier New"
+
+        self.root.option_add("*Background", self.palette["panel"])
+        self.root.option_add("*Foreground", self.palette["accent_green"])
+        self.root.option_add("*TCombobox*Listbox.foreground", self.palette["accent_green"])
             
     def setup_pygame_audio(self):
         """Initialize pygame for retro sound effects"""
@@ -131,45 +152,90 @@ class EdgarGUI:
     def setup_styles(self):
         """Configure ttk styles for that sweet, sweet retro look"""
         style = ttk.Style()
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
 
         # Configure frame styles
-        style.configure("Edgar.TFrame", 
-                       background="#000000",
-                       borderwidth=2,
-                       relief="raised")
-        
-        # Configure label styles  
-        style.configure("Edgar.TLabel",
-                       background="#000000", 
-                       foreground="#00FF00",
-                       font=(self.font_family, 10, "bold"))
-        
-        style.configure("Title.TLabel",
-                       background="#000000",
-                       foreground="#00FFFF", 
-                       font=(self.font_family, 14, "bold"))
-        
-        style.configure("Status.TLabel",
-                       background="#000000",
-                       foreground="#FFFF00",
-                       font=(self.font_family, 9))
+        style.configure(
+            "Edgar.TFrame",
+            background=self.palette["panel"],
+        )
 
-        style.configure("Edgar.Horizontal.TProgressbar",
-                       troughcolor="#001100",
-                       background="#00FF00",
-                       bordercolor="#003300",
-                       lightcolor="#00FF00",
-                       darkcolor="#009900")
+        style.configure(
+            "Retro.TLabelframe",
+            background=self.palette["panel"],
+            foreground=self.palette["accent_cyan"],
+            borderwidth=2,
+            relief="ridge",
+        )
+        style.configure(
+            "Retro.TLabelframe.Label",
+            background=self.palette["panel"],
+            foreground=self.palette["accent_cyan"],
+            font=(self.font_family, 11, "bold"),
+        )
+
+        # Configure label styles
+        style.configure(
+            "Edgar.TLabel",
+            background=self.palette["panel"],
+            foreground=self.palette["text_secondary"],
+            font=(self.font_family, 10, "bold"),
+        )
+
+        style.configure(
+            "Title.TLabel",
+            background=self.palette["panel"],
+            foreground=self.palette["accent_magenta"],
+            font=(self.font_family, 15, "bold"),
+        )
+
+        style.configure(
+            "Status.TLabel",
+            background=self.palette["panel"],
+            foreground=self.palette["text_status"],
+            font=(self.font_family, 10, "bold"),
+        )
+
+        style.configure(
+            "Edgar.Horizontal.TProgressbar",
+            troughcolor=self.palette["progress_trough"],
+            background=self.palette["progress_bar"],
+            bordercolor=self.palette["accent_magenta"],
+            lightcolor=self.palette["progress_bar"],
+            darkcolor="#b32025",
+        )
     
     def create_widgets(self):
         """Create all GUI widgets (the boring part, but necessary I guess)"""
-        # Main container
-        main_frame = ttk.Frame(self.root, style="Edgar.TFrame", padding="10")
+        # Layered neon borders for that shareware splash screen vibe
+        border_frame = tk.Frame(
+            self.root,
+            bg=self.palette["outer_border"],
+            bd=10,
+            relief="ridge",
+            highlightthickness=4,
+            highlightbackground=self.palette["inner_border"],
+            highlightcolor=self.palette["inner_border"],
+        )
+        border_frame.pack(fill="both", expand=True, padx=24, pady=24)
+
+        panel_frame = tk.Frame(
+            border_frame,
+            bg=self.palette["panel"],
+            bd=6,
+            relief="groove",
+        )
+        panel_frame.pack(fill="both", expand=True)
+
+        main_frame = ttk.Frame(panel_frame, style="Edgar.TFrame", padding="24")
         main_frame.pack(fill="both", expand=True)
-        
+
         # ASCII Art Header
         self.create_header(main_frame)
-        
+
         # Control panels
         self.create_mode_panel(main_frame)
         self.create_year_panel(main_frame)
@@ -184,8 +250,24 @@ class EdgarGUI:
     
     def create_header(self, parent):
         """Create the ASCII art header (the fancy part)"""
-        header_frame = ttk.Frame(parent, style="Edgar.TFrame")
-        header_frame.pack(fill="x", pady=(0, 20))
+        header_border = tk.Frame(
+            parent,
+            bg=self.palette["outer_border"],
+            bd=4,
+            relief="ridge",
+            highlightthickness=3,
+            highlightbackground=self.palette["inner_border"],
+            highlightcolor=self.palette["inner_border"],
+        )
+        header_border.pack(fill="x", pady=(0, 24))
+
+        header_frame = tk.Frame(
+            header_border,
+            bg=self.palette["panel"],
+            bd=6,
+            relief="sunken",
+        )
+        header_frame.pack(fill="both", expand=True)
         
         ascii_art = """
 ╔════════════════════════════════════════════════════════════════════╗
@@ -208,17 +290,21 @@ class EdgarGUI:
 ╚════════════════════════════════════════════════════════════════════╝
         """
         
-        header_label = tk.Label(header_frame, text=ascii_art,
-                               bg="#000000", fg="#00FFFF",
-                               font=(self.font_family, 8),
-                               justify="left")
+        header_label = tk.Label(
+            header_frame,
+            text=ascii_art,
+            bg=self.palette["panel"],
+            fg=self.palette["accent_cyan"],
+            font=(self.font_family, 8),
+            justify="left",
+        )
         header_label.pack()
     
     def create_mode_panel(self, parent):
         """Create scan mode selection panel"""
-        mode_frame = ttk.LabelFrame(parent, text=" SCAN MODE (Pick your poison) ", style="Edgar.TFrame")
+        mode_frame = ttk.LabelFrame(parent, text=" SCAN MODE (Pick your poison) ", style="Retro.TLabelframe")
         mode_frame.pack(fill="x", pady=5)
-        
+
         # Mode selection
         self.mode_var = tk.StringVar(value="pass1")
         
@@ -231,15 +317,17 @@ class EdgarGUI:
         for i, (value, text) in enumerate(modes):
             rb = tk.Radiobutton(mode_frame, text=text,
                                variable=self.mode_var, value=value,
-                               bg="#000000", fg="#00FF00",
-                               selectcolor="#004400", 
+                               bg=self.palette["panel"], fg=self.palette["accent_green"],
+                               selectcolor=self.palette["outer_border"],
+                               activebackground=self.palette["panel"],
+                               activeforeground=self.palette["accent_green"],
                                font=(self.font_family, 10),
                                command=self.on_mode_change)
             rb.grid(row=0, column=i, padx=20, pady=10, sticky="w")
             
     def create_year_panel(self, parent):
         """Create year selection panel (because time is a flat circle)"""  
-        year_frame = ttk.LabelFrame(parent, text=" TARGET YEARS (The Years That Matter) ", style="Edgar.TFrame")
+        year_frame = ttk.LabelFrame(parent, text=" TARGET YEARS (The Years That Matter) ", style="Retro.TLabelframe")
         year_frame.pack(fill="x", pady=5)
         
         # Year checkboxes
@@ -251,52 +339,65 @@ class EdgarGUI:
             self.year_vars[year] = var
             
             cb = tk.Checkbutton(year_frame, text=f"[{year}]",
-                               variable=var, 
-                               bg="#000000", fg="#00FF00",
-                               selectcolor="#004400",
+                               variable=var,
+                               bg=self.palette["panel"], fg=self.palette["accent_green"],
+                               selectcolor=self.palette["outer_border"],
+                               activebackground=self.palette["panel"],
+                               activeforeground=self.palette["accent_green"],
                                font=(self.font_family, 12, "bold"),
                                command=self.on_year_change)
             cb.grid(row=0, column=i, padx=15, pady=10)
     
     def create_directory_panel(self, parent):
         """Create directory selection panel (where the magic happens)"""
-        dir_frame = ttk.LabelFrame(parent, text=" SCAN DIRECTORIES (Point me at the stuff) ", style="Edgar.TFrame")
+        dir_frame = ttk.LabelFrame(parent, text=" SCAN DIRECTORIES (Point me at the stuff) ", style="Retro.TLabelframe")
         dir_frame.pack(fill="x", pady=5)
-        
+
         # Directory list and controls
-        list_frame = tk.Frame(dir_frame, bg="#000000")
+        list_frame = tk.Frame(dir_frame, bg=self.palette["panel"])
         list_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
+
         # Listbox for selected directories
-        self.dir_listbox = tk.Listbox(list_frame, 
-                                     bg="#000000", fg="#00FF00",
+        self.dir_listbox = tk.Listbox(list_frame,
+                                     bg=self.palette["background"], fg=self.palette["accent_green"],
                                      font=(self.font_family, 9),
                                      height=4,
-                                     selectbackground="#004400")
+                                     selectbackground=self.palette["outer_border"],
+                                     highlightthickness=2,
+                                     highlightbackground=self.palette["accent_magenta"],
+                                     highlightcolor=self.palette["accent_magenta"])
         self.dir_listbox.pack(side="left", fill="both", expand=True)
-        
+
         # Scrollbar (for when you have way too many directories)
-        scrollbar = tk.Scrollbar(list_frame, bg="#004400")
+        scrollbar = tk.Scrollbar(list_frame, bg=self.palette["outer_border"])
         scrollbar.pack(side="right", fill="y")
         self.dir_listbox.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.dir_listbox.yview)
-        
+
         # Buttons
-        btn_frame = tk.Frame(dir_frame, bg="#000000") 
+        btn_frame = tk.Frame(dir_frame, bg=self.palette["panel"])
         btn_frame.pack(fill="x", padx=10, pady=5)
-        
+
         add_btn = tk.Button(btn_frame, text="[ADD DIRECTORY]",
-                           bg="#004400", fg="#00FF00",
+                           bg=self.palette["outer_border"], fg=self.palette["inner_border"],
+                           activebackground=self.palette["accent_magenta"],
+                           activeforeground=self.palette["text_primary"],
                            font=(self.font_family, 10, "bold"),
                            command=self.add_directory,
-                           relief="raised", bd=3)
+                           relief="raised", bd=4,
+                           highlightthickness=2,
+                           highlightbackground=self.palette["inner_border"])
         add_btn.pack(side="left", padx=5)
-        
-        remove_btn = tk.Button(btn_frame, text="[REMOVE]", 
-                              bg="#440000", fg="#FF0000",
+
+        remove_btn = tk.Button(btn_frame, text="[REMOVE]",
+                              bg=self.palette["accent_red"], fg=self.palette["background"],
+                              activebackground="#ff8585",
+                              activeforeground=self.palette["panel"],
                               font=(self.font_family, 10, "bold"),
                               command=self.remove_directory,
-                              relief="raised", bd=3)
+                              relief="raised", bd=4,
+                              highlightthickness=2,
+                              highlightbackground=self.palette["inner_border"])
         remove_btn.pack(side="left", padx=5)
         
         # Add default directories (because we're helpful like that)
@@ -311,55 +412,65 @@ class EdgarGUI:
     
     def create_scan_panel(self, parent):
         """Create scan control panel (the business end)"""
-        scan_frame = ttk.LabelFrame(parent, text=" SCAN CONTROL (This is where it gets real) ", style="Edgar.TFrame")
+        scan_frame = ttk.LabelFrame(parent, text=" SCAN CONTROL (This is where it gets real) ", style="Retro.TLabelframe")
         scan_frame.pack(fill="x", pady=5)
-        
+
         # Scan button (the big red button, but green)
         self.scan_btn = tk.Button(scan_frame, text=">>> INITIATE SCAN SEQUENCE <<<",
-                                 bg="#004400", fg="#00FF00",
+                                 bg=self.palette["accent_green"], fg=self.palette["panel"],
                                  font=(self.font_family, 14, "bold"),
                                  height=2,
                                  command=self.start_scan,
-                                 relief="raised", bd=4)
+                                 activebackground="#9dff9d",
+                                 activeforeground=self.palette["background"],
+                                 relief="raised", bd=6,
+                                 highlightthickness=3,
+                                 highlightbackground=self.palette["inner_border"])
         self.scan_btn.pack(side="left", padx=20, pady=10)
-        
+
         # Stop button (for when things go sideways)
         self.stop_btn = tk.Button(scan_frame, text="[PANIC BUTTON]",
-                                 bg="#440000", fg="#FF0000", 
+                                 bg=self.palette["accent_red"], fg=self.palette["background"],
                                  font=(self.font_family, 12, "bold"),
                                  state="disabled",
                                  command=self.stop_scan,
-                                 relief="raised", bd=4)
+                                 activebackground="#ff8d8d",
+                                 activeforeground=self.palette["panel"],
+                                 relief="raised", bd=6,
+                                 highlightthickness=3,
+                                 highlightbackground=self.palette["inner_border"])
         self.stop_btn.pack(side="right", padx=20, pady=10)
     
     def create_status_panel(self, parent):
         """Create status and progress panel (where the magic words appear)"""
-        status_frame = ttk.LabelFrame(parent, text=" SYSTEM STATUS (What's happening now) ", style="Edgar.TFrame")
+        status_frame = ttk.LabelFrame(parent, text=" SYSTEM STATUS (What's happening now) ", style="Retro.TLabelframe")
         status_frame.pack(fill="both", expand=True, pady=5)
 
         # Status text area (the scrolling terminal goodness)
-        text_frame = tk.Frame(status_frame, bg="#000000")
+        text_frame = tk.Frame(status_frame, bg=self.palette["panel"])
         text_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        self.status_text = tk.Text(text_frame, 
-                                  bg="#000000", fg="#00FF00",
+
+        self.status_text = tk.Text(text_frame,
+                                  bg=self.palette["background"], fg=self.palette["accent_green"],
                                   font=(self.font_family, 9),
                                   height=18, width=120,  # Made much bigger
-                                  insertbackground="#00FF00",
-                                  selectbackground="#004400",
-                                  wrap=tk.WORD)  # Word wrap for long lines
-        
+                                  insertbackground=self.palette["accent_green"],
+                                  selectbackground=self.palette["outer_border"],
+                                  wrap=tk.WORD,
+                                  borderwidth=4,
+                                  relief="sunken")  # Word wrap for long lines
+
         # Scrollbar for the status text
-        status_scrollbar = tk.Scrollbar(text_frame, bg="#004400")
+        status_scrollbar = tk.Scrollbar(text_frame, bg=self.palette["outer_border"])
         status_scrollbar.pack(side="right", fill="y")
         self.status_text.pack(side="left", fill="both", expand=True)
-        
+
         self.status_text.config(yscrollcommand=status_scrollbar.set)
         status_scrollbar.config(command=self.status_text.yview)
 
         # Progress indicator
         self.progress_var = tk.StringVar()
-        controls_frame = tk.Frame(status_frame, bg="#000000")
+        controls_frame = tk.Frame(status_frame, bg=self.palette["panel"])
         controls_frame.pack(fill="x", padx=10, pady=(0, 10))
 
         self.progress_label = ttk.Label(controls_frame, textvariable=self.progress_var,
@@ -370,7 +481,7 @@ class EdgarGUI:
                                             mode="determinate", length=350)
         self.progress_bar.pack(side="left", padx=20, fill="x", expand=True)
 
-        self.duck_label = tk.Label(controls_frame, bg="#000000")
+        self.duck_label = tk.Label(controls_frame, bg=self.palette["panel"])
         self.duck_label.pack(side="right")
 
         self.duck_frames = self.create_duck_frames()
