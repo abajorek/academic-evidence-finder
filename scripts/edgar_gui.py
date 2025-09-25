@@ -17,18 +17,36 @@ import time
 import random
 import subprocess
 import os
+from functools import partial
 from pathlib import Path
 
 class EdgarGUI:
     def __init__(self):
         self.root = tk.Tk()
-        
+
         # Initialize configuration FIRST (before creating widgets)
         self.current_scan_process = None
         self.scanning = False
         self.selected_years = []
         self.scan_mode = "pass1"  # pass1, pass2, full
         self.selected_directories = []
+
+        # Retro palette inspired by early 80s shareware splash screens
+        self.palette = {
+            "background": "#05020c",
+            "panel": "#0b0418",
+            "outer_border": "#7f102a",
+            "inner_border": "#f5d90a",
+            "accent_green": "#66ff66",
+            "accent_magenta": "#ff4dd2",
+            "accent_cyan": "#48e0ff",
+            "accent_red": "#ff5555",
+            "text_primary": "#f5d90a",
+            "text_secondary": "#66ff66",
+            "text_status": "#f8ff9c",
+            "progress_trough": "#1a102f",
+            "progress_bar": "#ff6b35",
+        }
         
         # Random Homestar Runner-esque status messages
         self.homestar_messages = [
@@ -50,19 +68,26 @@ class EdgarGUI:
             "The Cheat would probably just eat the hard drive at this point."
         ]
         
+        # Track the Tk main thread so we can safely schedule UI work later
+        self.main_thread = threading.current_thread()
+
         # Now setup everything else
         self.setup_window()
         self.setup_pygame_audio()
         self.create_widgets()
         self.setup_styles()
+        self.duck_animation_job = None
+        self.current_duck_frame = 0
+        self.duck_frames = []
+        self.duck_animation_delay = 250
         
     def setup_window(self):
         """Configure the main window with retro styling"""
         self.root.title("Edgar Academic Evidence Scanner v2.1982 - \"It's like, totally authentic or whatever\"")
         self.root.geometry("1000x800")  # Made bigger
-        self.root.configure(bg='#000000')
+        self.root.configure(bg=self.palette["background"])
         self.root.resizable(True, True)  # Made resizable
-        
+
         # Set minimum size
         self.root.minsize(900, 700)
         
@@ -71,6 +96,10 @@ class EdgarGUI:
             self.font_family = "Consolas"
         except:
             self.font_family = "Courier New"
+
+        self.root.option_add("*Background", self.palette["panel"])
+        self.root.option_add("*Foreground", self.palette["accent_green"])
+        self.root.option_add("*TCombobox*Listbox.foreground", self.palette["accent_green"])
             
     def setup_pygame_audio(self):
         """Initialize pygame for retro sound effects"""
@@ -123,44 +152,96 @@ class EdgarGUI:
     def setup_styles(self):
         """Configure ttk styles for that sweet, sweet retro look"""
         style = ttk.Style()
-        
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
+
         # Configure frame styles
-        style.configure("Edgar.TFrame", 
-                       background="#000000",
-                       borderwidth=2,
-                       relief="raised")
-        
-        # Configure label styles  
-        style.configure("Edgar.TLabel",
-                       background="#000000", 
-                       foreground="#00FF00",
-                       font=(self.font_family, 10, "bold"))
-        
-        style.configure("Title.TLabel",
-                       background="#000000",
-                       foreground="#00FFFF", 
-                       font=(self.font_family, 14, "bold"))
-        
-        style.configure("Status.TLabel",
-                       background="#000000",
-                       foreground="#FFFF00",
-                       font=(self.font_family, 9))
+        style.configure(
+            "Edgar.TFrame",
+            background=self.palette["panel"],
+        )
+
+        style.configure(
+            "Retro.TLabelframe",
+            background=self.palette["panel"],
+            foreground=self.palette["accent_cyan"],
+            borderwidth=2,
+            relief="ridge",
+        )
+        style.configure(
+            "Retro.TLabelframe.Label",
+            background=self.palette["panel"],
+            foreground=self.palette["accent_cyan"],
+            font=(self.font_family, 11, "bold"),
+        )
+
+        # Configure label styles
+        style.configure(
+            "Edgar.TLabel",
+            background=self.palette["panel"],
+            foreground=self.palette["text_secondary"],
+            font=(self.font_family, 10, "bold"),
+        )
+
+        style.configure(
+            "Title.TLabel",
+            background=self.palette["panel"],
+            foreground=self.palette["accent_magenta"],
+            font=(self.font_family, 15, "bold"),
+        )
+
+        style.configure(
+            "Status.TLabel",
+            background=self.palette["panel"],
+            foreground=self.palette["text_status"],
+            font=(self.font_family, 10, "bold"),
+        )
+
+        style.configure(
+            "Edgar.Horizontal.TProgressbar",
+            troughcolor=self.palette["progress_trough"],
+            background=self.palette["progress_bar"],
+            bordercolor=self.palette["accent_magenta"],
+            lightcolor=self.palette["progress_bar"],
+            darkcolor="#b32025",
+        )
     
     def create_widgets(self):
         """Create all GUI widgets (the boring part, but necessary I guess)"""
-        # Main container
-        main_frame = ttk.Frame(self.root, style="Edgar.TFrame", padding="10")
+        # Layered neon borders for that shareware splash screen vibe
+        border_frame = tk.Frame(
+            self.root,
+            bg=self.palette["outer_border"],
+            bd=10,
+            relief="ridge",
+            highlightthickness=4,
+            highlightbackground=self.palette["inner_border"],
+            highlightcolor=self.palette["inner_border"],
+        )
+        border_frame.pack(fill="both", expand=True, padx=24, pady=24)
+
+        panel_frame = tk.Frame(
+            border_frame,
+            bg=self.palette["panel"],
+            bd=6,
+            relief="groove",
+        )
+        panel_frame.pack(fill="both", expand=True)
+
+        main_frame = ttk.Frame(panel_frame, style="Edgar.TFrame", padding="24")
         main_frame.pack(fill="both", expand=True)
-        
+
         # ASCII Art Header
         self.create_header(main_frame)
-        
+
         # Control panels
         self.create_mode_panel(main_frame)
-        self.create_year_panel(main_frame) 
+        self.create_year_panel(main_frame)
         self.create_directory_panel(main_frame)
         self.create_scan_panel(main_frame)
-        
+
         # Status and progress
         self.create_status_panel(main_frame)
         
@@ -169,8 +250,24 @@ class EdgarGUI:
     
     def create_header(self, parent):
         """Create the ASCII art header (the fancy part)"""
-        header_frame = ttk.Frame(parent, style="Edgar.TFrame")
-        header_frame.pack(fill="x", pady=(0, 20))
+        header_border = tk.Frame(
+            parent,
+            bg=self.palette["outer_border"],
+            bd=4,
+            relief="ridge",
+            highlightthickness=3,
+            highlightbackground=self.palette["inner_border"],
+            highlightcolor=self.palette["inner_border"],
+        )
+        header_border.pack(fill="x", pady=(0, 24))
+
+        header_frame = tk.Frame(
+            header_border,
+            bg=self.palette["panel"],
+            bd=6,
+            relief="sunken",
+        )
+        header_frame.pack(fill="both", expand=True)
         
         ascii_art = """
 ╔════════════════════════════════════════════════════════════════════╗
@@ -193,17 +290,21 @@ class EdgarGUI:
 ╚════════════════════════════════════════════════════════════════════╝
         """
         
-        header_label = tk.Label(header_frame, text=ascii_art,
-                               bg="#000000", fg="#00FFFF",
-                               font=(self.font_family, 8),
-                               justify="left")
+        header_label = tk.Label(
+            header_frame,
+            text=ascii_art,
+            bg=self.palette["panel"],
+            fg=self.palette["accent_cyan"],
+            font=(self.font_family, 8),
+            justify="left",
+        )
         header_label.pack()
     
     def create_mode_panel(self, parent):
         """Create scan mode selection panel"""
-        mode_frame = ttk.LabelFrame(parent, text=" SCAN MODE (Pick your poison) ", style="Edgar.TFrame")
+        mode_frame = ttk.LabelFrame(parent, text=" SCAN MODE (Pick your poison) ", style="Retro.TLabelframe")
         mode_frame.pack(fill="x", pady=5)
-        
+
         # Mode selection
         self.mode_var = tk.StringVar(value="pass1")
         
@@ -216,15 +317,17 @@ class EdgarGUI:
         for i, (value, text) in enumerate(modes):
             rb = tk.Radiobutton(mode_frame, text=text,
                                variable=self.mode_var, value=value,
-                               bg="#000000", fg="#00FF00",
-                               selectcolor="#004400", 
+                               bg=self.palette["panel"], fg=self.palette["accent_green"],
+                               selectcolor=self.palette["outer_border"],
+                               activebackground=self.palette["panel"],
+                               activeforeground=self.palette["accent_green"],
                                font=(self.font_family, 10),
                                command=self.on_mode_change)
             rb.grid(row=0, column=i, padx=20, pady=10, sticky="w")
             
     def create_year_panel(self, parent):
         """Create year selection panel (because time is a flat circle)"""  
-        year_frame = ttk.LabelFrame(parent, text=" TARGET YEARS (The Years That Matter) ", style="Edgar.TFrame")
+        year_frame = ttk.LabelFrame(parent, text=" TARGET YEARS (The Years That Matter) ", style="Retro.TLabelframe")
         year_frame.pack(fill="x", pady=5)
         
         # Year checkboxes
@@ -236,52 +339,65 @@ class EdgarGUI:
             self.year_vars[year] = var
             
             cb = tk.Checkbutton(year_frame, text=f"[{year}]",
-                               variable=var, 
-                               bg="#000000", fg="#00FF00",
-                               selectcolor="#004400",
+                               variable=var,
+                               bg=self.palette["panel"], fg=self.palette["accent_green"],
+                               selectcolor=self.palette["outer_border"],
+                               activebackground=self.palette["panel"],
+                               activeforeground=self.palette["accent_green"],
                                font=(self.font_family, 12, "bold"),
                                command=self.on_year_change)
             cb.grid(row=0, column=i, padx=15, pady=10)
     
     def create_directory_panel(self, parent):
         """Create directory selection panel (where the magic happens)"""
-        dir_frame = ttk.LabelFrame(parent, text=" SCAN DIRECTORIES (Point me at the stuff) ", style="Edgar.TFrame")
+        dir_frame = ttk.LabelFrame(parent, text=" SCAN DIRECTORIES (Point me at the stuff) ", style="Retro.TLabelframe")
         dir_frame.pack(fill="x", pady=5)
-        
+
         # Directory list and controls
-        list_frame = tk.Frame(dir_frame, bg="#000000")
+        list_frame = tk.Frame(dir_frame, bg=self.palette["panel"])
         list_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
+
         # Listbox for selected directories
-        self.dir_listbox = tk.Listbox(list_frame, 
-                                     bg="#000000", fg="#00FF00",
+        self.dir_listbox = tk.Listbox(list_frame,
+                                     bg=self.palette["background"], fg=self.palette["accent_green"],
                                      font=(self.font_family, 9),
                                      height=4,
-                                     selectbackground="#004400")
+                                     selectbackground=self.palette["outer_border"],
+                                     highlightthickness=2,
+                                     highlightbackground=self.palette["accent_magenta"],
+                                     highlightcolor=self.palette["accent_magenta"])
         self.dir_listbox.pack(side="left", fill="both", expand=True)
-        
+
         # Scrollbar (for when you have way too many directories)
-        scrollbar = tk.Scrollbar(list_frame, bg="#004400")
+        scrollbar = tk.Scrollbar(list_frame, bg=self.palette["outer_border"])
         scrollbar.pack(side="right", fill="y")
         self.dir_listbox.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.dir_listbox.yview)
-        
+
         # Buttons
-        btn_frame = tk.Frame(dir_frame, bg="#000000") 
+        btn_frame = tk.Frame(dir_frame, bg=self.palette["panel"])
         btn_frame.pack(fill="x", padx=10, pady=5)
-        
+
         add_btn = tk.Button(btn_frame, text="[ADD DIRECTORY]",
-                           bg="#004400", fg="#00FF00",
+                           bg=self.palette["outer_border"], fg=self.palette["inner_border"],
+                           activebackground=self.palette["accent_magenta"],
+                           activeforeground=self.palette["text_primary"],
                            font=(self.font_family, 10, "bold"),
                            command=self.add_directory,
-                           relief="raised", bd=3)
+                           relief="raised", bd=4,
+                           highlightthickness=2,
+                           highlightbackground=self.palette["inner_border"])
         add_btn.pack(side="left", padx=5)
-        
-        remove_btn = tk.Button(btn_frame, text="[REMOVE]", 
-                              bg="#440000", fg="#FF0000",
+
+        remove_btn = tk.Button(btn_frame, text="[REMOVE]",
+                              bg=self.palette["accent_red"], fg=self.palette["background"],
+                              activebackground="#ff8585",
+                              activeforeground=self.palette["panel"],
                               font=(self.font_family, 10, "bold"),
                               command=self.remove_directory,
-                              relief="raised", bd=3)
+                              relief="raised", bd=4,
+                              highlightthickness=2,
+                              highlightbackground=self.palette["inner_border"])
         remove_btn.pack(side="left", padx=5)
         
         # Add default directories (because we're helpful like that)
@@ -296,58 +412,82 @@ class EdgarGUI:
     
     def create_scan_panel(self, parent):
         """Create scan control panel (the business end)"""
-        scan_frame = ttk.LabelFrame(parent, text=" SCAN CONTROL (This is where it gets real) ", style="Edgar.TFrame")
+        scan_frame = ttk.LabelFrame(parent, text=" SCAN CONTROL (This is where it gets real) ", style="Retro.TLabelframe")
         scan_frame.pack(fill="x", pady=5)
-        
+
         # Scan button (the big red button, but green)
         self.scan_btn = tk.Button(scan_frame, text=">>> INITIATE SCAN SEQUENCE <<<",
-                                 bg="#004400", fg="#00FF00",
+                                 bg=self.palette["accent_green"], fg=self.palette["panel"],
                                  font=(self.font_family, 14, "bold"),
                                  height=2,
                                  command=self.start_scan,
-                                 relief="raised", bd=4)
+                                 activebackground="#9dff9d",
+                                 activeforeground=self.palette["background"],
+                                 relief="raised", bd=6,
+                                 highlightthickness=3,
+                                 highlightbackground=self.palette["inner_border"])
         self.scan_btn.pack(side="left", padx=20, pady=10)
-        
+
         # Stop button (for when things go sideways)
         self.stop_btn = tk.Button(scan_frame, text="[PANIC BUTTON]",
-                                 bg="#440000", fg="#FF0000", 
+                                 bg=self.palette["accent_red"], fg=self.palette["background"],
                                  font=(self.font_family, 12, "bold"),
                                  state="disabled",
                                  command=self.stop_scan,
-                                 relief="raised", bd=4)
+                                 activebackground="#ff8d8d",
+                                 activeforeground=self.palette["panel"],
+                                 relief="raised", bd=6,
+                                 highlightthickness=3,
+                                 highlightbackground=self.palette["inner_border"])
         self.stop_btn.pack(side="right", padx=20, pady=10)
     
     def create_status_panel(self, parent):
         """Create status and progress panel (where the magic words appear)"""
-        status_frame = ttk.LabelFrame(parent, text=" SYSTEM STATUS (What's happening now) ", style="Edgar.TFrame")
+        status_frame = ttk.LabelFrame(parent, text=" SYSTEM STATUS (What's happening now) ", style="Retro.TLabelframe")
         status_frame.pack(fill="both", expand=True, pady=5)
-        
+
         # Status text area (the scrolling terminal goodness)
-        text_frame = tk.Frame(status_frame, bg="#000000")
+        text_frame = tk.Frame(status_frame, bg=self.palette["panel"])
         text_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        self.status_text = tk.Text(text_frame, 
-                                  bg="#000000", fg="#00FF00",
+
+        self.status_text = tk.Text(text_frame,
+                                  bg=self.palette["background"], fg=self.palette["accent_green"],
                                   font=(self.font_family, 9),
                                   height=18, width=120,  # Made much bigger
-                                  insertbackground="#00FF00",
-                                  selectbackground="#004400",
-                                  wrap=tk.WORD)  # Word wrap for long lines
-        
+                                  insertbackground=self.palette["accent_green"],
+                                  selectbackground=self.palette["outer_border"],
+                                  wrap=tk.WORD,
+                                  borderwidth=4,
+                                  relief="sunken")  # Word wrap for long lines
+
         # Scrollbar for the status text
-        status_scrollbar = tk.Scrollbar(text_frame, bg="#004400")
+        status_scrollbar = tk.Scrollbar(text_frame, bg=self.palette["outer_border"])
         status_scrollbar.pack(side="right", fill="y")
         self.status_text.pack(side="left", fill="both", expand=True)
-        
+
         self.status_text.config(yscrollcommand=status_scrollbar.set)
         status_scrollbar.config(command=self.status_text.yview)
-        
+
         # Progress indicator
         self.progress_var = tk.StringVar()
-        self.progress_label = ttk.Label(status_frame, textvariable=self.progress_var,
+        controls_frame = tk.Frame(status_frame, bg=self.palette["panel"])
+        controls_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        self.progress_label = ttk.Label(controls_frame, textvariable=self.progress_var,
                                        style="Status.TLabel")
-        self.progress_label.pack(pady=(0, 10))
-        
+        self.progress_label.pack(side="left")
+
+        self.progress_bar = ttk.Progressbar(controls_frame, style="Edgar.Horizontal.TProgressbar",
+                                            mode="determinate", length=350)
+        self.progress_bar.pack(side="left", padx=20, fill="x", expand=True)
+
+        self.duck_label = tk.Label(controls_frame, bg=self.palette["panel"])
+        self.duck_label.pack(side="right")
+
+        self.duck_frames = self.create_duck_frames()
+        if self.duck_frames:
+            self.duck_label.config(image=self.duck_frames[0])
+
         # Initial status
         self.log_message("EDGAR ACADEMIC EVIDENCE SCANNER INITIALIZED")
         self.log_message("Status: Ready to scan some files, I guess...")
@@ -356,8 +496,97 @@ class EdgarGUI:
         else:
             self.log_message("Audio disabled. Silent but still deadly.")
         self.log_message("Tip: This thing actually works, which is more than we can say for most software.")
-        self.progress_var.set("Status: READY (and slightly sarcastic)")
-    
+        self.set_progress_status("Status: READY (and slightly sarcastic)")
+
+    def create_duck_frames(self):
+        """Build adorable retro duck animation frames for the status bar"""
+        duck_patterns = [
+            [
+                "000000011100000000",
+                "000000111110000000",
+                "000001111111000000",
+                "000011111111100100",
+                "000111111111110110",
+                "000111111111110110",
+                "000011111111111000",
+                "000001111111110000",
+                "000000111111100000",
+                "000000011111000000",
+                "000000111111100000",
+                "000000110111000000",
+                "000001100111100000",
+                "000011100110110000",
+                "000011000000110000",
+                "000001100001100000",
+                "000000011111000000",
+                "000000001110000000",
+            ],
+            [
+                "000000000111000000",
+                "000000001111100000",
+                "000000011111110000",
+                "000000111111111000",
+                "000001111111111100",
+                "000001111111111100",
+                "000000111111111000",
+                "000000011111110000",
+                "000000001111100000",
+                "000000011111100000",
+                "000000011011100000",
+                "000000111001111000",
+                "000001110001101100",
+                "000001100000001100",
+                "000011100000011000",
+                "000001110000110000",
+                "000000111111100000",
+                "000000011111000000",
+            ],
+        ]
+
+        frames = []
+        for pattern in duck_patterns:
+            height = len(pattern)
+            width = len(pattern[0])
+            image = tk.PhotoImage(width=width, height=height)
+
+            for y, row in enumerate(pattern):
+                for x, char in enumerate(row):
+                    color = "#FFD447" if char == "1" else "#000000"
+                    image.put(color, (x, y))
+
+            # Scale the sprite up for better visibility
+            frames.append(image.zoom(4, 4))
+
+        return frames
+
+    def start_duck_animation(self):
+        """Kick off the duck status animation"""
+        if not self.duck_frames:
+            return
+
+        if self.duck_animation_job is None:
+            self.duck_animation_job = self.root.after(0, self.animate_duck)
+
+    def stop_duck_animation(self):
+        """Stop the duck animation and reset to the first frame"""
+        if self.duck_animation_job is not None:
+            self.root.after_cancel(self.duck_animation_job)
+            self.duck_animation_job = None
+
+        if self.duck_frames:
+            self.current_duck_frame = 0
+            self.duck_label.config(image=self.duck_frames[0])
+
+    def animate_duck(self):
+        """Animate the duck sprite while scans are running"""
+        if not self.scanning or not self.duck_frames:
+            self.duck_animation_job = None
+            return
+
+        self.current_duck_frame = (self.current_duck_frame + 1) % len(self.duck_frames)
+        self.duck_label.config(image=self.duck_frames[self.current_duck_frame])
+        self.duck_animation_job = self.root.after(self.duck_animation_delay, self.animate_duck)
+
     def start_retro_effects(self):
         """Start background retro effects (the atmospheric stuff)"""
         self.animate_scanner()
@@ -385,10 +614,55 @@ class EdgarGUI:
         """Add message to status log (with timestamp because we're thorough)"""
         timestamp = time.strftime("%H:%M:%S")
         log_entry = f"[{timestamp}] {message}\\n"
-        
+        self.dispatch_to_ui(self._append_log_entry, log_entry)
+
+    def _append_log_entry(self, log_entry):
+        """Actually append log output on the main thread."""
         self.status_text.insert("end", log_entry)
         self.status_text.see("end")
         self.root.update_idletasks()
+
+    def dispatch_to_ui(self, func, *args, **kwargs):
+        """Execute ``func`` on the Tk main thread."""
+        if threading.current_thread() is self.main_thread:
+            func(*args, **kwargs)
+        else:
+            self.root.after(0, partial(func, *args, **kwargs))
+
+    def set_progress_status(self, text):
+        """Update the status label text safely."""
+        self.dispatch_to_ui(self.progress_var.set, text)
+
+    def update_progress_bar(self, *, mode=None, maximum=None, value=None, start=None,
+                             stop=False, step=None, update_idletasks=False):
+        """Thread-safe helper to tweak the progress bar."""
+        if not hasattr(self, "progress_bar"):
+            return
+
+        def _apply():
+            if stop:
+                self.progress_bar.stop()
+            if mode is not None:
+                self.progress_bar.config(mode=mode)
+            if maximum is not None:
+                self.progress_bar.config(maximum=maximum)
+            if value is not None:
+                self.progress_bar["value"] = value
+            if step is not None:
+                self.progress_bar.step(step)
+            if start is not None:
+                self.progress_bar.start(start)
+            if update_idletasks:
+                self.progress_bar.update_idletasks()
+
+        self.dispatch_to_ui(_apply)
+
+    def schedule_beep_sequence(self, sequence):
+        """Play a series of beeps without blocking the UI."""
+        delay = 0
+        for frequency, duration, pause_after in sequence:
+            self.root.after(int(delay), lambda f=frequency, d=duration: self.play_beep(f, d))
+            delay += int(duration + pause_after)
     
     def on_mode_change(self):
         """Handle scan mode change (user made a choice!)"""
@@ -456,13 +730,17 @@ class EdgarGUI:
         self.scanning = True
         self.scan_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
-        
-        # Play scan initiation sound sequence
-        self.play_beep(1200, 200)
-        time.sleep(0.1)
-        self.play_beep(800, 300)
-        time.sleep(0.1)
-        self.play_beep(1000, 200)
+
+        self.update_progress_bar(mode="determinate", maximum=100, value=0, stop=True)
+
+        self.start_duck_animation()
+
+        # Play scan initiation sound sequence without blocking the UI
+        self.schedule_beep_sequence([
+            (1200, 200, 100),
+            (800, 300, 100),
+            (1000, 200, 0),
+        ])
         
         self.log_message("=" * 70)
         self.log_message("INITIATING ACADEMIC EVIDENCE SCAN SEQUENCE...")
@@ -487,10 +765,12 @@ class EdgarGUI:
             # Build year filter arguments
             year_start = f"{min(years)}-01-01"
             year_end = f"{max(years)}-12-31"
-            
+
             # Simulate scan progress with retro effects and commentary
             self.simulate_scan_progress()
-            
+
+            self.update_progress_bar(mode="indeterminate", start=120)
+
             # Build command based on mode
             script_dir = Path(__file__).parent
             
@@ -594,7 +874,7 @@ class EdgarGUI:
                     current_time = time.time()
                     if current_time - last_update_time > 5:  # Every 5 seconds
                         elapsed = current_time - scan_start_time
-                        self.progress_var.set(f"Status: SCANNING... ({elapsed:.0f}s elapsed)")
+                        self.set_progress_status(f"Status: SCANNING... ({elapsed:.0f}s elapsed)")
                         
                         if line_count == 0:
                             self.log_message("   → Still initializing... (this is normal, probably)")
@@ -604,9 +884,6 @@ class EdgarGUI:
                         # Play a little progress beep
                         if random.random() < 0.3:
                             self.play_beep(random.randint(600, 1000), 60)
-                    
-                    # Update the GUI
-                    self.root.update()
                     
                 except Exception as e:
                     # No more output available right now
@@ -659,10 +936,15 @@ class EdgarGUI:
         finally:
             # Reset UI state
             self.scanning = False
-            self.scan_btn.config(state="normal") 
-            self.stop_btn.config(state="disabled")
-            self.progress_var.set("Status: READY (and hopefully wiser)")
-    
+            def _reset_ui():
+                self.scan_btn.config(state="normal")
+                self.stop_btn.config(state="disabled")
+                self.update_progress_bar(mode="determinate", maximum=100, value=0, stop=True)
+                self.stop_duck_animation()
+                self.set_progress_status("Status: READY (and hopefully wiser)")
+
+            self.dispatch_to_ui(_reset_ui)
+
     def simulate_scan_progress(self):
         """Simulate retro scan progress display (the theatrical part)"""
         scan_steps = [
@@ -674,7 +956,7 @@ class EdgarGUI:
             "Engaging pattern matching engines...",
             "Beginning systematic file analysis..."
         ]
-        
+
         step_comments = [
             "This always takes longer than it should.",
             "Lots of fancy words for 'getting ready'.",
@@ -684,14 +966,18 @@ class EdgarGUI:
             "Pattern matching: finding needles in haystacks since 1982.",
             "And here... we... go!"
         ]
-        
+
+        total_steps = len(scan_steps)
+        self.update_progress_bar(mode="determinate", maximum=total_steps, value=0, stop=True)
+
         for i, step in enumerate(scan_steps):
             self.log_message(step)
             if i < len(step_comments):
                 self.log_message(f"   ({step_comments[i]})")
-            
-            self.progress_var.set(f"Status: {step}")
-            
+
+            self.set_progress_status(f"Status: {step}")
+            self.update_progress_bar(value=i + 1, update_idletasks=True)
+
             # Retro progress animation with varying beeps
             for j in range(2):
                 self.play_beep(400 + j * 200 + i * 50, 80)
@@ -708,11 +994,13 @@ class EdgarGUI:
         self.scanning = False
         self.scan_btn.config(state="normal")
         self.stop_btn.config(state="disabled")
-        
+        self.update_progress_bar(mode="determinate", maximum=100, value=0, stop=True)
+        self.stop_duck_animation()
+
         self.log_message("SCAN ABORTED BY USER")
         self.log_message("Well, that was fun while it lasted.")
         self.play_beep(300, 400)  # Abort sound (sad trombone)
-        self.progress_var.set("Status: ABORTED (user got impatient)")
+        self.set_progress_status("Status: ABORTED (user got impatient)")
         
         # Random abort message
         abort_msg = random.choice([

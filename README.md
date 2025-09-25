@@ -23,14 +23,16 @@ Scan your computer for artifacts that support **Teaching, Service, Scholarship**
 ### Edgar GUI (The Fun Way)
 ```bash
 ./setup_edgar.sh              # One-command setup
-python scripts/edgar_gui.py   # Launch the retro GUI
+python3 scripts/edgar_gui.py  # Launch the retro GUI
 ```
+
+> 💡 **Heads up:** Many macOS and Linux environments only expose the interpreter as `python3`. If `python` isn't found, just swap in `python3` for every command below.
 
 ### Command Line (The Serious Way)
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python scripts/scan.py --include ~/Documents --out results
+python3 scripts/scan.py --include ~/Documents --out results
 ```
 
 ## Features
@@ -63,7 +65,7 @@ python scripts/scan.py --include ~/Documents --out results
 ```bash
 # Setup and launch Edgar
 ./setup_edgar.sh
-python scripts/edgar_gui.py
+python3 scripts/edgar_gui.py
 
 # Then use the GUI to:
 # 1. Select scan mode (Pass 1, Pass 2, or Full)
@@ -76,32 +78,32 @@ python scripts/edgar_gui.py
 ### Two-Pass Command Line
 ```bash
 # Quick metadata-only scan
-python scripts/scan_optimized.py --pass1-only --include ~/Documents --out results
+python3 scripts/scan_optimized.py --pass1-only --include ~/Documents --out results
 
 # Review results, then run detailed analysis on specific categories
-python scripts/scan_optimized.py --categories scholarship teaching --include ~/Documents --out results
+python3 scripts/scan_optimized.py --categories scholarship teaching --include ~/Documents --out results
 
 # Or do both passes at once
-python scripts/scan_optimized.py --include ~/Documents --out results
+python3 scripts/scan_optimized.py --include ~/Documents --out results
 ```
 
 ### Traditional Single-Pass Scanner
 ```bash
 # Basic scan
-python scripts/scan.py --include ~/Documents --out results
+python3 scripts/scan.py --include ~/Documents --out results
 
 # With date filtering
-python scripts/scan.py --include ~/Documents --modified-since 2024-01-01 --out results
+python3 scripts/scan.py --include ~/Documents --modified-since 2024-01-01 --out results
 
 # With Edgar mode (for authentic 80s scanning experience)
-python scripts/scan.py --include ~/Documents --edgar --out results
+python3 scripts/scan.py --include ~/Documents --edgar --out results
 ```
 
 ### Spotlight Integration (macOS)
 ```bash
 # Use macOS Spotlight to build file list first (much faster)
 ./scripts/build_paths.sh  # Creates /tmp/paths.txt
-python scripts/scan.py --path-list /tmp/paths.txt --out results
+python3 scripts/scan.py --path-list /tmp/paths.txt --out results
 ```
 
 ## Configuration
@@ -160,10 +162,10 @@ The scanner can estimate time investment in creative files:
 ### Email and Calendar Integration
 ```bash
 # Scan exported email (.mbox files)
-python scripts/scan.py --mbox ~/Downloads/Inbox.mbox --out results
+python3 scripts/scan.py --mbox ~/Downloads/Inbox.mbox --out results
 
 # Scan calendar exports (.ics files)  
-python scripts/scan.py --ics ~/Downloads/calendar.ics --out results
+python3 scripts/scan.py --ics ~/Downloads/calendar.ics --out results
 ```
 
 ## Output Files
@@ -213,7 +215,7 @@ Interactive dashboard with:
 pip install pygame
 
 # Run without sounds if needed
-python scripts/edgar_gui.py  # Audio will auto-disable if pygame unavailable
+python3 scripts/edgar_gui.py  # Audio will auto-disable if pygame unavailable
 ```
 
 ### No Files Found
@@ -233,6 +235,6 @@ python scripts/edgar_gui.py  # Audio will auto-disable if pygame unavailable
 *"This tool is like, way more useful than it has any right to be."* - Strong Bad
 
 Ready to find some academic evidence? Choose your weapon:
-- 🎮 **Edgar GUI**: `python scripts/edgar_gui.py` 
-- ⚡ **Optimized**: `python scripts/scan_optimized.py --help`
-- 🖥️ **Classic**: `python scripts/scan.py --help`
+- 🎮 **Edgar GUI**: `python3 scripts/edgar_gui.py`
+- ⚡ **Optimized**: `python3 scripts/scan_optimized.py --help`
+- 🖥️ **Classic**: `python3 scripts/scan.py --help`
