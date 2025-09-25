@@ -17,6 +17,7 @@ import time
 import random
 import subprocess
 import os
+from functools import partial
 from pathlib import Path
 
 class EdgarGUI:
@@ -50,6 +51,9 @@ class EdgarGUI:
             "The Cheat would probably just eat the hard drive at this point."
         ]
         
+        # Track the Tk main thread so we can safely schedule UI work later
+        self.main_thread = threading.current_thread()
+
         # Now setup everything else
         self.setup_window()
         self.setup_pygame_audio()
@@ -58,6 +62,7 @@ class EdgarGUI:
         self.duck_animation_job = None
         self.current_duck_frame = 0
         self.duck_frames = []
+        self.duck_animation_delay = 250
         
     def setup_window(self):
         """Configure the main window with retro styling"""
@@ -380,7 +385,7 @@ class EdgarGUI:
         else:
             self.log_message("Audio disabled. Silent but still deadly.")
         self.log_message("Tip: This thing actually works, which is more than we can say for most software.")
-        self.progress_var.set("Status: READY (and slightly sarcastic)")
+        self.set_progress_status("Status: READY (and slightly sarcastic)")
 
     def create_duck_frames(self):
         """Build adorable retro duck animation frames for the status bar"""
@@ -469,7 +474,7 @@ class EdgarGUI:
 
         self.current_duck_frame = (self.current_duck_frame + 1) % len(self.duck_frames)
         self.duck_label.config(image=self.duck_frames[self.current_duck_frame])
-        self.duck_animation_job = self.root.after(250, self.animate_duck)
+        self.duck_animation_job = self.root.after(self.duck_animation_delay, self.animate_duck)
 
     def start_retro_effects(self):
         """Start background retro effects (the atmospheric stuff)"""
@@ -498,10 +503,55 @@ class EdgarGUI:
         """Add message to status log (with timestamp because we're thorough)"""
         timestamp = time.strftime("%H:%M:%S")
         log_entry = f"[{timestamp}] {message}\\n"
-        
+        self.dispatch_to_ui(self._append_log_entry, log_entry)
+
+    def _append_log_entry(self, log_entry):
+        """Actually append log output on the main thread."""
         self.status_text.insert("end", log_entry)
         self.status_text.see("end")
         self.root.update_idletasks()
+
+    def dispatch_to_ui(self, func, *args, **kwargs):
+        """Execute ``func`` on the Tk main thread."""
+        if threading.current_thread() is self.main_thread:
+            func(*args, **kwargs)
+        else:
+            self.root.after(0, partial(func, *args, **kwargs))
+
+    def set_progress_status(self, text):
+        """Update the status label text safely."""
+        self.dispatch_to_ui(self.progress_var.set, text)
+
+    def update_progress_bar(self, *, mode=None, maximum=None, value=None, start=None,
+                             stop=False, step=None, update_idletasks=False):
+        """Thread-safe helper to tweak the progress bar."""
+        if not hasattr(self, "progress_bar"):
+            return
+
+        def _apply():
+            if stop:
+                self.progress_bar.stop()
+            if mode is not None:
+                self.progress_bar.config(mode=mode)
+            if maximum is not None:
+                self.progress_bar.config(maximum=maximum)
+            if value is not None:
+                self.progress_bar["value"] = value
+            if step is not None:
+                self.progress_bar.step(step)
+            if start is not None:
+                self.progress_bar.start(start)
+            if update_idletasks:
+                self.progress_bar.update_idletasks()
+
+        self.dispatch_to_ui(_apply)
+
+    def schedule_beep_sequence(self, sequence):
+        """Play a series of beeps without blocking the UI."""
+        delay = 0
+        for frequency, duration, pause_after in sequence:
+            self.root.after(int(delay), lambda f=frequency, d=duration: self.play_beep(f, d))
+            delay += int(duration + pause_after)
     
     def on_mode_change(self):
         """Handle scan mode change (user made a choice!)"""
@@ -570,19 +620,16 @@ class EdgarGUI:
         self.scan_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
 
-        if hasattr(self, "progress_bar"):
-            self.progress_bar.stop()
-            self.progress_bar.config(mode="determinate", maximum=100)
-            self.progress_bar["value"] = 0
+        self.update_progress_bar(mode="determinate", maximum=100, value=0, stop=True)
 
         self.start_duck_animation()
 
-        # Play scan initiation sound sequence
-        self.play_beep(1200, 200)
-        time.sleep(0.1)
-        self.play_beep(800, 300)
-        time.sleep(0.1)
-        self.play_beep(1000, 200)
+        # Play scan initiation sound sequence without blocking the UI
+        self.schedule_beep_sequence([
+            (1200, 200, 100),
+            (800, 300, 100),
+            (1000, 200, 0),
+        ])
         
         self.log_message("=" * 70)
         self.log_message("INITIATING ACADEMIC EVIDENCE SCAN SEQUENCE...")
@@ -611,9 +658,7 @@ class EdgarGUI:
             # Simulate scan progress with retro effects and commentary
             self.simulate_scan_progress()
 
-            if hasattr(self, "progress_bar"):
-                self.progress_bar.config(mode="indeterminate")
-                self.progress_bar.start(120)
+            self.update_progress_bar(mode="indeterminate", start=120)
 
             # Build command based on mode
             script_dir = Path(__file__).parent
@@ -718,7 +763,7 @@ class EdgarGUI:
                     current_time = time.time()
                     if current_time - last_update_time > 5:  # Every 5 seconds
                         elapsed = current_time - scan_start_time
-                        self.progress_var.set(f"Status: SCANNING... ({elapsed:.0f}s elapsed)")
+                        self.set_progress_status(f"Status: SCANNING... ({elapsed:.0f}s elapsed)")
                         
                         if line_count == 0:
                             self.log_message("   → Still initializing... (this is normal, probably)")
@@ -728,9 +773,6 @@ class EdgarGUI:
                         # Play a little progress beep
                         if random.random() < 0.3:
                             self.play_beep(random.randint(600, 1000), 60)
-                    
-                    # Update the GUI
-                    self.root.update()
                     
                 except Exception as e:
                     # No more output available right now
@@ -783,14 +825,14 @@ class EdgarGUI:
         finally:
             # Reset UI state
             self.scanning = False
-            self.scan_btn.config(state="normal")
-            self.stop_btn.config(state="disabled")
-            if hasattr(self, "progress_bar"):
-                self.progress_bar.stop()
-                self.progress_bar.config(mode="determinate", maximum=100)
-                self.progress_bar["value"] = 0
-            self.stop_duck_animation()
-            self.progress_var.set("Status: READY (and hopefully wiser)")
+            def _reset_ui():
+                self.scan_btn.config(state="normal")
+                self.stop_btn.config(state="disabled")
+                self.update_progress_bar(mode="determinate", maximum=100, value=0, stop=True)
+                self.stop_duck_animation()
+                self.set_progress_status("Status: READY (and hopefully wiser)")
+
+            self.dispatch_to_ui(_reset_ui)
 
     def simulate_scan_progress(self):
         """Simulate retro scan progress display (the theatrical part)"""
@@ -815,19 +857,15 @@ class EdgarGUI:
         ]
 
         total_steps = len(scan_steps)
-        if hasattr(self, "progress_bar"):
-            self.progress_bar.config(mode="determinate", maximum=total_steps)
-            self.progress_bar["value"] = 0
+        self.update_progress_bar(mode="determinate", maximum=total_steps, value=0, stop=True)
 
         for i, step in enumerate(scan_steps):
             self.log_message(step)
             if i < len(step_comments):
                 self.log_message(f"   ({step_comments[i]})")
 
-            self.progress_var.set(f"Status: {step}")
-            if hasattr(self, "progress_bar"):
-                self.progress_bar["value"] = i + 1
-                self.progress_bar.update_idletasks()
+            self.set_progress_status(f"Status: {step}")
+            self.update_progress_bar(value=i + 1, update_idletasks=True)
 
             # Retro progress animation with varying beeps
             for j in range(2):
@@ -845,16 +883,13 @@ class EdgarGUI:
         self.scanning = False
         self.scan_btn.config(state="normal")
         self.stop_btn.config(state="disabled")
-        if hasattr(self, "progress_bar"):
-            self.progress_bar.stop()
-            self.progress_bar.config(mode="determinate", maximum=100)
-            self.progress_bar["value"] = 0
+        self.update_progress_bar(mode="determinate", maximum=100, value=0, stop=True)
         self.stop_duck_animation()
 
         self.log_message("SCAN ABORTED BY USER")
         self.log_message("Well, that was fun while it lasted.")
         self.play_beep(300, 400)  # Abort sound (sad trombone)
-        self.progress_var.set("Status: ABORTED (user got impatient)")
+        self.set_progress_status("Status: ABORTED (user got impatient)")
         
         # Random abort message
         abort_msg = random.choice([
