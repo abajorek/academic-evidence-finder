@@ -1,0 +1,320 @@
+categories:
+  Teaching:
+    Syllabi:
+      any:
+      - \bsyllabus\b
+      - \boffice hours\b
+      - \bcredit hours\b
+      - \bprerequisites?\b
+      - \bgrading (policy|scale)\b
+      - \bcourse (schedule|outline)\b
+      - \blearning outcomes?\b
+    Assignments:
+      any:
+      - \bassignment\b
+      - \bdue date\b
+      - \bsubmission\b
+      - \bplagiarism\b
+      - \brubric\b
+      - \bpoints?\b
+      - \b(LMS|Canvas|Blackboard|D2L|Moodle)\b
+    Exams:
+      any:
+      - \bexam\b
+      - \bmidterm\b
+      - \bfinal exam\b
+      - \bquiz\b
+      - \bproctor\b
+  Service:
+    Conference:
+      any:
+      - call for papers
+      - \bproposal\b
+      - \bproceedings\b
+      - \bposter\b
+      - \bpresentation\b
+  Scholarship:
+    Musical_Compositions:
+      any:
+      - original composition
+      - commissioned piece
+      - premiere performance
+      - world premiere
+      - regional premiere
+      - musical work
+      - concert piece
+      - chamber work
+      - solo piece
+      - ensemble piece
+      - wind band composition
+      - concert band piece
+      - marching band arrangement
+      - ceremonial music
+      - processional
+      - fanfare
+      - overture
+    Music_Arrangements:
+      any:
+      - musical arrangement
+      - transcription
+      - adaptation
+      - orchestration
+      - re-orchestration
+      - instrumentation
+      - wind band arrangement
+      - concert band arrangement
+      - marching band arrangement
+      - pep band arrangement
+      - jazz arrangement
+      - popular music arrangement
+      - traditional arrangement
+      - folk song arrangement
+      - hymn arrangement
+      - patriotic arrangement
+    Drill_Design_Works:
+      any:
+      - drill design
+      - field show design
+      - marching show
+      - halftime show
+      - competition show
+      - parade formation
+      - ceremonial formation
+      - visual design
+      - 3D drill animation
+      - field choreography
+      - formation design
+      - drill innovation
+      - visual effect
+      - prop integration
+      - color guard integration
+    Music_Technology_Research:
+      any:
+      - music notation software
+      - digital music creation
+      - MIDI technology
+      - music software development
+      - audio production
+      - music app development
+      - educational technology
+      - music learning software
+      - rehearsal technology
+      - performance technology
+      - music distribution
+      - streaming optimization
+  Debug:
+    AnyText:
+      any:
+      - \w{3,}
+  Research:
+    IRB:
+      any:
+      - \bIRB\b
+      - institutional review board
+      - \bprotocol\b
+      - \binformed consent\b
+      - \bqualtrics\b
+    Publications:
+      any:
+      - \babstract\b
+      - \bmethodology\b
+      - \bliterature review\b
+      - \bresults\b
+      - \bdiscussion\b
+      - \breferences\b
+      - doi:\s*10\.
+      - arXiv:\s*\d{4}\.\d+
+    Grants:
+      any:
+      - \bNSF\b
+      - \bNIH\b
+      - grant proposal
+      - budget justification
+      - \bbiosketch\b
+      - current and pending
+  Administration:
+    Assessment:
+      any:
+      - \bassessment\b
+      - \baccreditation\b
+      - \bHLC\b
+      - \bcurriculum committee\b
+      - \bprogram review\b
+file_filters:
+  include_extensions:
+  - .pdf
+  - .docx
+  - .pptx
+  - .txt
+  - .doc
+  - .rtf
+  - .odt
+  - .pages
+  - .key
+  - .odp
+  - .xlsx
+  - .xls
+  - .csv
+  - .ods
+  - .numbers
+  - .md
+  - .tex
+  - .html
+  - .htm
+  - .xml
+  - .mus
+  - .musx
+  - .sib
+  - .ftm
+  - .ftmx
+  - .musicxml
+  - .mxl
+  - .xml
+  - .3dj
+  - .3dz
+  - .3da
+  - .prod
+  - .mid
+  - .midi
+  - .mp3
+  - .wav
+  - .aif
+  - .m4a
+  exclude_dirs:
+  - .git
+  - node_modules
+  - __pycache__
+  - .venv
+  - .DS_Store
+  - Thumbs.db
+  - temp
+  - tmp
+  - cache
+  - backup
+  - archive
+  - old
+  - deleted
+  - trash
+  - Finale Backups
+  - Sibelius Backups
+  - Pyware Backups
+scoring:
+  per_hit_points: 1
+  cap_per_file: 25
+  category_weights:
+    Teaching: 1.0
+    Service: 1.1
+    Scholarship: 1.3
+  bonus_keywords:
+    NASM: 3
+    accreditation: 3
+    tenure: 5
+    promotion: 5
+    peer review: 3
+    published: 4
+    conference presentation: 4
+    grant award: 5
+    fellowship: 4
+    sabbatical: 4
+    CBDNA: 3
+    NAfME: 3
+    original composition: 8
+    commissioned work: 8
+    world premiere: 6
+    premiere performance: 5
+    musical arrangement: 4
+    transcription: 3
+    orchestration: 4
+    drill design: 6
+    field show design: 7
+    halftime show: 5
+    marching band show: 5
+    3D animation: 4
+    Pyware: 3
+    Finale: 2
+    Sibelius: 2
+    music notation: 3
+    MusicXML: 2
+    MIDI: 2
+    guest conductor: 4
+    masterclass: 3
+    clinic: 3
+    adjudicator: 3
+    festival judge: 3
+    honor band: 4
+    all-state: 4
+    national conference: 5
+    international conference: 6
+    keynote: 7
+    plenary: 6
+    editorial board: 5
+    manuscript review: 4
+    external review: 4
+    grant funded: 6
+    Colorado Mesa: 2
+    CMEA: 3
+    Western Division: 4
+file_processing:
+  proprietary_formats:
+  - .mus
+  - .musx
+  - .sib
+  - .3dj
+  - .3dz
+  - .3da
+  - .prod
+  filename_analysis:
+    composition_indicators:
+    - original
+    - composition
+    - op\s*\d+
+    - mvt\s*\d+
+    - no\s*\d+
+    arrangement_indicators:
+    - arr\.
+    - arranged
+    - arrangement
+    - transcription
+    - adaptation
+    drill_indicators:
+    - drill
+    - show
+    - halftime
+    - field
+    - formation
+    - animation
+    version_indicators:
+    - v\d+
+    - version
+    - draft
+    - final
+    - revised
+    - \d{4}[-_]\d{2}[-_]\d{2}
+    project_indicators:
+    - \b20\d{2}\b
+    - fall|spring|summer
+    - semester
+    - concert
+    - recital
+    - festival
+effort_analysis:
+  work_session_max_gap_hours: 4
+  minimum_work_session_minutes: 5
+  typical_save_intervals:
+    .musx: 15
+    .mus: 20
+    .sib: 15
+    .3dj: 10
+    .3dz: 30
+    .pdf: 30
+    .docx: 10
+    .pptx: 20
+  complexity_multipliers:
+    size_small: 1.0
+    size_medium: 1.3
+    size_large: 1.8
+    size_xlarge: 2.5
+    span_single: 1.0
+    span_short: 1.2
+    span_medium: 1.5
+    span_long: 2.0

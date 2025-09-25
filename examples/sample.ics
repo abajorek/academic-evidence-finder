@@ -1,0 +1,9 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+DTSTART:20240901T150000Z
+SUMMARY:Committee Meeting - Program Review
+DESCRIPTION:Agenda: assessment report; budget request
+LOCATION:Moss Performing Arts Center
+END:VEVENT
+END:VCALENDAR

@@ -1,0 +1,5 @@
+# Absolute paths to .mbox files (email exports)
+~/Downloads/Inbox.mbox
+~/Downloads/Sent.mbox
+~/Downloads/Scholarship.mbox
+./examples/sample.mbox

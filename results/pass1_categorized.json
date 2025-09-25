@@ -1,0 +1,197 @@
+{
+  "teaching": [],
+  "service": [],
+  "scholarship": [
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSP_140Z_43072_Spring_2025.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 55.7451171875,
+      "age_days": 110.64785610463885,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSP_140Z_43072_Spring_2025_Comments.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 90.7041015625,
+      "age_days": 110.6478561061676,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSA_250_40236_Spring_2025_Comments.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 98.0185546875,
+      "age_days": 110.64785610690988,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSP_240_43073_Spring_2025_Comments.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 90.75390625,
+      "age_days": 110.64785610751146,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSP_140_43071_Spring_2025.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 55.7763671875,
+      "age_days": 110.6478561080799,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSA_234_42838_Spring_2025.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 55.7890625,
+      "age_days": 110.64785610859869,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSA_250_40236_Spring_2025.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 55.7900390625,
+      "age_days": 110.64785610909539,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSA_234_42838_Spring_2025_Comments.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 95.220703125,
+      "age_days": 110.64785610959485,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSP_240_43073_Spring_2025.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 55.7646484375,
+      "age_days": 110.64785611009157,
+      "extension": ".pdf"
+    },
+    {
+      "path": "/Users/andrewbajorek/Downloads/2025 - CMU - ADB Evals/Bajorek_Andrew_MUSP_140_43071_Spring_2025_Comments.pdf",
+      "category": "scholarship",
+      "confidence": 3.5,
+      "scores": {
+        "teaching": 1.5,
+        "service": 2.5,
+        "scholarship": 3.5
+      },
+      "reasons": [
+        "ext:.pdf",
+        "ext:.pdf",
+        "ext:.pdf",
+        "recent_file"
+      ],
+      "size_kb": 91.8349609375,
+      "age_days": 110.64785611058826,
+      "extension": ".pdf"
+    }
+  ],
+  "misc": []
+}
