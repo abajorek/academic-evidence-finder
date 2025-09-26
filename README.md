@@ -73,6 +73,20 @@ python3 scripts/edgar_gui.py
 # 5. Enjoy authentic 80s computer sounds
 ```
 
+### Build a macOS App Bundle
+
+Need a self-contained app for macOS that includes the GUI, scan scripts, and retro sound effects? Use the PyInstaller setup that lives in `packaging/macos/`.
+
+```bash
+# Run this on macOS – it creates a dedicated build virtualenv
+scripts/build_edgar_macos.sh
+
+# After the build completes
+open dist/Edgar.app            # Launch the bundled GUI
+```
+
+The bundle includes all of the supporting scan scripts, configuration, and pygame assets. When you launch the packaged app, Edgar writes results to `~/EdgarEvidence/results` so the reports stick around outside the temporary app bundle.
+
 ### Two-Pass Command Line
 ```bash
 # Quick metadata-only scan

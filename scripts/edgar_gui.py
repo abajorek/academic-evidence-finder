@@ -17,13 +17,20 @@ import time
 import random
 import subprocess
 import os
+import sys
 from pathlib import Path
 
 class EdgarGUI:
     def __init__(self):
         self.root = tk.Tk()
-        
+
         # Initialize configuration FIRST (before creating widgets)
+        self.runtime_scripts_dir = self.get_runtime_scripts_dir()
+        self.working_dir = self.get_working_directory()
+        self.results_dir = self.working_dir / "results"
+        self.working_dir.mkdir(parents=True, exist_ok=True)
+        self.results_dir.mkdir(parents=True, exist_ok=True)
+
         self.current_scan_process = None
         self.scanning = False
         self.selected_years = []
@@ -55,6 +62,33 @@ class EdgarGUI:
         self.setup_pygame_audio()
         self.create_widgets()
         self.setup_styles()
+
+    # --- Runtime helpers -------------------------------------------------
+
+    def is_frozen(self):
+        """Return True when running from a PyInstaller bundle."""
+        return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+    def get_runtime_root(self):
+        """Return the base directory for bundled resources."""
+        if self.is_frozen():
+            return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+        return Path(__file__).resolve().parent
+
+    def get_runtime_scripts_dir(self):
+        """Locate the directory that holds scan scripts at runtime."""
+        runtime_root = self.get_runtime_root()
+        bundled_scripts = runtime_root / "embedded_scripts"
+        if bundled_scripts.exists():
+            return bundled_scripts
+        return Path(__file__).resolve().parent
+
+    def get_working_directory(self):
+        """Determine where scan output should be written."""
+        if self.is_frozen():
+            base = Path.home() / "EdgarEvidence"
+            return base
+        return Path(__file__).resolve().parents[1]
         
     def setup_window(self):
         """Configure the main window with retro styling"""
@@ -492,7 +526,7 @@ class EdgarGUI:
             self.simulate_scan_progress()
             
             # Build command based on mode
-            script_dir = Path(__file__).parent
+            script_dir = self.runtime_scripts_dir
             
             if mode == "pass1":
                 self.log_message("Executing metadata-only analysis...")
@@ -501,7 +535,8 @@ class EdgarGUI:
                 optimized_script = script_dir / "scan_optimized.py"
                 if optimized_script.exists():
                     cmd = [
-                        "python", str(optimized_script),
+                        sys.executable,
+                        str(optimized_script),
                         "--pass1-only",
                         "--modified-since", year_start,
                         "--modified-until", year_end,
@@ -510,7 +545,8 @@ class EdgarGUI:
                 else:
                     self.log_message("Optimized scanner not found. Falling back to regular scan.")
                     cmd = [
-                        "python", str(script_dir / "scan.py"),
+                        sys.executable,
+                        str(script_dir / "scan.py"),
                         "--modified-since", year_start,
                         "--modified-until", year_end,
                         "--out", "results"
@@ -522,14 +558,16 @@ class EdgarGUI:
                 optimized_script = script_dir / "scan_optimized.py"
                 if optimized_script.exists():
                     cmd = [
-                        "python", str(optimized_script), 
+                        sys.executable,
+                        str(optimized_script),
                         "--modified-since", year_start,
                         "--modified-until", year_end,
                         "--out", "results"
                     ]
                 else:
                     cmd = [
-                        "python", str(script_dir / "scan.py"),
+                        sys.executable,
+                        str(script_dir / "scan.py"),
                         "--modified-since", year_start,
                         "--modified-until", year_end,
                         "--out", "results"
@@ -540,7 +578,8 @@ class EdgarGUI:
                 self.log_message("Full scan mode: No mercy, no prisoners.")
                 # Run original scanner with Edgar mode
                 cmd = [
-                    "python", str(script_dir / "scan.py"),
+                    sys.executable,
+                    str(script_dir / "scan.py"),
                     "--modified-since", year_start, 
                     "--modified-until", year_end,
                     "--out", "results",
@@ -560,10 +599,14 @@ class EdgarGUI:
             # Execute scan process with real-time output
             self.current_scan_process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                universal_newlines=True, bufsize=0, cwd=script_dir.parent  # Unbuffered
+                universal_newlines=True,
+                bufsize=0,
+                cwd=self.working_dir  # Run scans from persistent workspace
             )
-            
+
             self.log_message("Scan process started. Monitoring progress...")
+            self.log_message(f"Working directory: {self.working_dir}")
+            self.log_message(f"Results directory: {self.results_dir}")
             
             # Read output in real-time with commentary
             line_count = 0
@@ -627,7 +670,7 @@ class EdgarGUI:
                 self.log_message("=" * 70)
                 self.log_message("SCAN COMPLETED SUCCESSFULLY!")
                 self.log_message("Edgar has done his job. Results are ready for inspection.")
-                self.log_message("Results saved to: results/")
+                self.log_message(f"Results saved to: {self.results_dir}")
                 self.log_message("You can now bask in the glory of organized evidence.")
                 self.log_message("=" * 70)
                 
