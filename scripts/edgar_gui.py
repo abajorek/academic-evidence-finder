@@ -626,13 +626,21 @@ class EdgarGUI:
                 self.reset_scan_state()
                 return
 
-            cmd = [
-                sys.executable,
+            cmd: List[str] = []
+
+            if is_frozen_build():
+                cmd.append(sys.executable)
+            else:
+                cmd.extend([sys.executable, str(Path(__file__).resolve())])
+
+            cmd.extend([
                 "--run-embedded",
                 script_name,
                 "--cwd",
                 str(self.working_dir),
-            ] + script_args
+            ])
+
+            cmd.extend(script_args)
 
             self.log_message(f"Command: {' '.join(cmd)}")
             self.log_message("Here we go! Executing scan command...")
