@@ -9,6 +9,7 @@ Inspired by classic 1980s virus scanners and terminal interfaces
 Features authentic 80s computer sounds because apparently that's what we do now.
 """
 
+import argparse
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pygame
@@ -17,13 +18,87 @@ import time
 import random
 import subprocess
 import os
+import sys
 from pathlib import Path
+from typing import List, Optional
+import runpy
+
+
+def is_frozen_build() -> bool:
+    """Return True when running from a PyInstaller bundle."""
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
+def get_runtime_root() -> Path:
+    """Return the base directory for bundled resources."""
+    if is_frozen_build():
+        return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return Path(__file__).resolve().parent
+
+
+def get_runtime_scripts_dir() -> Path:
+    """Locate the directory that holds scan scripts at runtime."""
+    runtime_root = get_runtime_root()
+    bundled_scripts = runtime_root / "embedded_scripts"
+    if bundled_scripts.exists():
+        return bundled_scripts
+    return Path(__file__).resolve().parent
+
+
+def get_working_directory() -> Path:
+    """Determine where scan output should be written."""
+    if is_frozen_build():
+        return Path.home() / "EdgarEvidence"
+    return Path(__file__).resolve().parents[1]
+
+
+def run_embedded_script(script_name: str, script_args: List[str], working_directory: Optional[Path] = None) -> int:
+    """Execute an embedded script within the current interpreter context."""
+
+    scripts_dir = get_runtime_scripts_dir()
+    target = scripts_dir / script_name
+    if not target.exists():
+        print(f"[edgar] Unable to locate embedded script: {script_name}", file=sys.stderr)
+        return 1
+
+    previous_cwd = Path.cwd()
+    previous_argv = sys.argv[:]
+    previous_sys_path = sys.path[:]
+
+    try:
+        if working_directory is not None:
+            os.makedirs(working_directory, exist_ok=True)
+            os.chdir(working_directory)
+
+        sys.argv = [str(target)] + script_args
+
+        # Ensure embedded paths take precedence when the script resolves modules.
+        runtime_root = get_runtime_root()
+        for path in [str(scripts_dir), str(runtime_root)]:
+            if path not in sys.path:
+                sys.path.insert(0, path)
+
+        runpy.run_path(str(target), run_name="__main__")
+        return 0
+    except SystemExit as exc:  # Allow CLI scripts to call sys.exit
+        code = exc.code if isinstance(exc.code, int) else 0
+        return code
+    finally:
+        sys.argv = previous_argv
+        sys.path = previous_sys_path
+        os.chdir(previous_cwd)
 
 class EdgarGUI:
     def __init__(self):
         self.root = tk.Tk()
-        
+
         # Initialize configuration FIRST (before creating widgets)
+        self.runtime_scripts_dir = get_runtime_scripts_dir()
+        self.working_dir = get_working_directory()
+        self.results_dir = self.working_dir / "results"
+        self.working_dir.mkdir(parents=True, exist_ok=True)
+        self.results_dir.mkdir(parents=True, exist_ok=True)
+
         self.current_scan_process = None
         self.scanning = False
         self.selected_years = []
@@ -55,7 +130,7 @@ class EdgarGUI:
         self.setup_pygame_audio()
         self.create_widgets()
         self.setup_styles()
-        
+
     def setup_window(self):
         """Configure the main window with retro styling"""
         self.root.title("Edgar Academic Evidence Scanner v2.1982 - \"It's like, totally authentic or whatever\"")
@@ -160,12 +235,30 @@ class EdgarGUI:
         self.create_year_panel(main_frame) 
         self.create_directory_panel(main_frame)
         self.create_scan_panel(main_frame)
-        
+
         # Status and progress
         self.create_status_panel(main_frame)
-        
+
         # Start the retro animation (because why not?)
         self.start_retro_effects()
+
+    def build_subprocess_env(self):
+        """Prepare environment variables for spawned scan processes."""
+        env = os.environ.copy()
+        env.setdefault("PYTHONUNBUFFERED", "1")
+        env.setdefault("PYTHONIOENCODING", "utf-8")
+        env["EDGAR_RUNTIME_ROOT"] = str(get_runtime_root())
+        env["EDGAR_WORKSPACE"] = str(self.working_dir)
+        env["EDGAR_RESULTS_DIR"] = str(self.results_dir)
+        return env
+
+    def reset_scan_state(self, status_message: str = "Status: READY (and hopefully wiser)"):
+        """Restore the UI to an idle state after a scan finishes or aborts."""
+        self.scanning = False
+        self.scan_btn.config(state="normal")
+        self.stop_btn.config(state="disabled")
+        self.progress_var.set(status_message)
+        self.current_scan_process = None
     
     def create_header(self, parent):
         """Create the ASCII art header (the fancy part)"""
@@ -491,79 +584,73 @@ class EdgarGUI:
             # Simulate scan progress with retro effects and commentary
             self.simulate_scan_progress()
             
-            # Build command based on mode
-            script_dir = Path(__file__).parent
-            
+            script_dir = self.runtime_scripts_dir
+            script_name = "scan.py"
+            script_args: List[str] = [
+                "--modified-since", year_start,
+                "--modified-until", year_end,
+                "--out", str(self.results_dir),
+            ]
+
             if mode == "pass1":
                 self.log_message("Executing metadata-only analysis...")
                 self.log_message("This is the quick and dirty approach. Fast, but not very thorough.")
-                # Try to find the optimized scanner
                 optimized_script = script_dir / "scan_optimized.py"
                 if optimized_script.exists():
-                    cmd = [
-                        "python", str(optimized_script),
-                        "--pass1-only",
-                        "--modified-since", year_start,
-                        "--modified-until", year_end,
-                        "--out", "results"
-                    ]
+                    script_name = "scan_optimized.py"
+                    script_args = ["--pass1-only"] + script_args
                 else:
                     self.log_message("Optimized scanner not found. Falling back to regular scan.")
-                    cmd = [
-                        "python", str(script_dir / "scan.py"),
-                        "--modified-since", year_start,
-                        "--modified-until", year_end,
-                        "--out", "results"
-                    ]
-                
+
             elif mode == "pass2":
                 self.log_message("Executing full text extraction...")
                 self.log_message("Now we're getting serious. Text extraction engaged.")
                 optimized_script = script_dir / "scan_optimized.py"
                 if optimized_script.exists():
-                    cmd = [
-                        "python", str(optimized_script), 
-                        "--modified-since", year_start,
-                        "--modified-until", year_end,
-                        "--out", "results"
-                    ]
-                else:
-                    cmd = [
-                        "python", str(script_dir / "scan.py"),
-                        "--modified-since", year_start,
-                        "--modified-until", year_end,
-                        "--out", "results"
-                    ]
-                
+                    script_name = "scan_optimized.py"
+
             else:  # full scan
                 self.log_message("Executing complete scan sequence...")
                 self.log_message("Full scan mode: No mercy, no prisoners.")
-                # Run original scanner with Edgar mode
-                cmd = [
-                    "python", str(script_dir / "scan.py"),
-                    "--modified-since", year_start, 
-                    "--modified-until", year_end,
-                    "--out", "results",
-                    "--edgar",  # Enable Edgar mode for authentic experience
-                    "--edgar-interval", "0.3"
-                ]
-            
-            # Add directories to command
+                script_args.extend(["--edgar", "--edgar-interval", "0.3"])
+
+            # Add directories to command arguments
             for directory in directories:
-                cmd.extend(["--include", directory])
-            
+                script_args.extend(["--include", directory])
+
+            target_script = script_dir / script_name
+            if not target_script.exists():
+                message = f"Required scan script not found: {target_script}"
+                self.log_message(message)
+                messagebox.showerror("Missing Script", message)
+                self.reset_scan_state()
+                return
+
+            cmd = [
+                sys.executable,
+                "--run-embedded",
+                script_name,
+                "--cwd",
+                str(self.working_dir),
+            ] + script_args
+
             self.log_message(f"Command: {' '.join(cmd)}")
             self.log_message("Here we go! Executing scan command...")
-            
+
             scan_start_time = time.time()  # Track scan duration
-            
+
             # Execute scan process with real-time output
             self.current_scan_process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                universal_newlines=True, bufsize=0, cwd=script_dir.parent  # Unbuffered
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                bufsize=0,
+                cwd=self.working_dir,
+                env=self.build_subprocess_env()
             )
-            
+
             self.log_message("Scan process started. Monitoring progress...")
+            self.log_message(f"Working directory: {self.working_dir}")
+            self.log_message(f"Results directory: {self.results_dir}")
             
             # Read output in real-time with commentary
             line_count = 0
@@ -627,7 +714,7 @@ class EdgarGUI:
                 self.log_message("=" * 70)
                 self.log_message("SCAN COMPLETED SUCCESSFULLY!")
                 self.log_message("Edgar has done his job. Results are ready for inspection.")
-                self.log_message("Results saved to: results/")
+                self.log_message(f"Results saved to: {self.results_dir}")
                 self.log_message("You can now bask in the glory of organized evidence.")
                 self.log_message("=" * 70)
                 
@@ -658,10 +745,7 @@ class EdgarGUI:
             
         finally:
             # Reset UI state
-            self.scanning = False
-            self.scan_btn.config(state="normal") 
-            self.stop_btn.config(state="disabled")
-            self.progress_var.set("Status: READY (and hopefully wiser)")
+            self.reset_scan_state()
     
     def simulate_scan_progress(self):
         """Simulate retro scan progress display (the theatrical part)"""
@@ -705,14 +789,10 @@ class EdgarGUI:
             self.current_scan_process.terminate()
             self.log_message("Terminating scan process...")
             
-        self.scanning = False
-        self.scan_btn.config(state="normal")
-        self.stop_btn.config(state="disabled")
-        
         self.log_message("SCAN ABORTED BY USER")
         self.log_message("Well, that was fun while it lasted.")
         self.play_beep(300, 400)  # Abort sound (sad trombone)
-        self.progress_var.set("Status: ABORTED (user got impatient)")
+        self.reset_scan_state("Status: ABORTED (user got impatient)")
         
         # Random abort message
         abort_msg = random.choice([
@@ -741,12 +821,46 @@ class EdgarGUI:
         self.log_message(startup_msg)
         self.root.mainloop()
 
-def main():
-    """Launch Edgar GUI (the entry point)"""
+def parse_cli_args(argv: Optional[List[str]] = None):
+    """Parse command-line arguments for embedded execution."""
+    parser = argparse.ArgumentParser(
+        description="Launch Edgar GUI or run bundled scanner scripts.")
+    parser.add_argument(
+        "--run-embedded",
+        dest="embedded_script",
+        metavar="SCRIPT",
+        help="Execute an embedded scanner script instead of launching the GUI.")
+    parser.add_argument(
+        "--cwd",
+        dest="embedded_cwd",
+        metavar="PATH",
+        help="Working directory to use when executing an embedded script.")
+
+    args, remainder = parser.parse_known_args(argv)
+
+    if args.embedded_cwd and not args.embedded_script:
+        parser.error("--cwd can only be used together with --run-embedded")
+
+    return args, remainder
+
+
+def main(argv: Optional[List[str]] = None):
+    """Launch Edgar GUI or dispatch to an embedded script."""
+    args, remainder = parse_cli_args(argv)
+
+    if args.embedded_script:
+        working_dir = Path(args.embedded_cwd).expanduser() if args.embedded_cwd else None
+        exit_code = run_embedded_script(args.embedded_script, remainder, working_dir)
+        sys.exit(exit_code)
+
+    if remainder:
+        raise SystemExit(f"Unexpected arguments: {' '.join(remainder)}")
+
     print("🎮 Launching Edgar Academic Evidence Scanner GUI...")
     print("   (With authentic 80s computer sounds!)")
     app = EdgarGUI()
     app.run()
+
 
 if __name__ == "__main__":
     main()
