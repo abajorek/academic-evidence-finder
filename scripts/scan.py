@@ -1,15 +1,16 @@
 
-import argparse, os, re, yaml, mailbox, json, time
+import argparse, os, re, mailbox, json, time
 from pathlib import Path
 from datetime import datetime, timezone
 from dateutil import parser as dtparse
 from icalendar import Calendar
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+from ae_finder.tqdm_compat import tqdm
 from collections import Counter
 
 from report import write_csv, write_summary, write_html
 from extractors import extract_text
+from ae_finder import load_rules_config
 
 # ---------- helpers ----------
 
@@ -56,8 +57,7 @@ def write_progress(outdir, stage, n, total, started_ts):
 # ---------- rules ----------
 
 def load_rules(path):
-    with open(path, "r") as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_rules_config(path)
     compiled = {}
     for cat, subs in cfg["categories"].items():
         compiled[cat] = {}
@@ -191,7 +191,7 @@ def main():
     ap.add_argument("--ics-file", help="File listing ICS paths")
     ap.add_argument("--mbox", nargs="*", help="MBOX files")
     ap.add_argument("--mbox-file", help="File listing MBOX paths")
-    ap.add_argument("--rules", default=str(Path(__file__).resolve().parents[1] / "config" / "rules.yml"))
+    ap.add_argument("--rules", default=str(Path(__file__).resolve().parents[1] / "config" / "rules.json"))
     ap.add_argument("--out", default="out", help="Output directory")
     ap.add_argument("--modified-since", help="YYYY-MM-DD")
     ap.add_argument("--modified-until", help="YYYY-MM-DD")
