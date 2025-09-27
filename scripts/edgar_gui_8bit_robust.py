@@ -158,7 +158,7 @@ class Edgar8BitGUIRobust:
                     wave = np.sin(2 * np.pi * frequency * t) * 0.3
                 
                 wave = (wave * 32767).astype(np.int16)
-                stereo_wave = np.array([wave, wave]).T
+                stereo_wave = np.ascontiguousarray(np.column_stack((wave, wave)))
                 sound = pygame.sndarray.make_sound(stereo_wave)
                 sound.play()
                 
