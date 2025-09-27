@@ -16,7 +16,6 @@ examples_tree = Tree(str(project_root / "examples"), prefix="examples", excludes
 script_tree = Tree(str(scripts_dir), prefix="embedded_scripts", excludes=["*.pyc", "__pycache__"])
 
 hiddenimports = [
-    "numpy",
     "tkinter",
     "tkinter.filedialog",
     "tkinter.messagebox",
