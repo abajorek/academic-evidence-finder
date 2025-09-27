@@ -23,6 +23,13 @@ Scan your computer for artifacts that support **Teaching, Service, Scholarship**
 python3 scripts/evidence_finder_app.py
 ```
 
+Want the optional retro sound effects? Re-run setup with the `--with-sound`
+flag to install `pygame` and `numpy` from `requirements-optional.txt`:
+
+```bash
+./setup_app.sh --with-sound
+```
+
 ### Command line
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
