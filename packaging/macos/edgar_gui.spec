@@ -77,7 +77,7 @@ app = BUNDLE(
     coll,
     name="Edgar.app",
     icon=None,
-    bundle_identifier="org.academicevidence.edgar",
+    bundle_identifier="com.academicevidence.edgar",
     info_plist={
         "NSHighResolutionCapable": True,
         "NSHumanReadableName": "Edgar Academic Evidence Scanner",

@@ -591,7 +591,6 @@ class EdgarGUI:
                 "--modified-until", year_end,
                 "--out", str(self.results_dir),
             ]
-
             if mode == "pass1":
                 self.log_message("Executing metadata-only analysis...")
                 self.log_message("This is the quick and dirty approach. Fast, but not very thorough.")
@@ -601,7 +600,6 @@ class EdgarGUI:
                     script_args = ["--pass1-only"] + script_args
                 else:
                     self.log_message("Optimized scanner not found. Falling back to regular scan.")
-
             elif mode == "pass2":
                 self.log_message("Executing full text extraction...")
                 self.log_message("Now we're getting serious. Text extraction engaged.")
@@ -649,17 +647,18 @@ class EdgarGUI:
 
             # Execute scan process with real-time output
             self.current_scan_process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 universal_newlines=True,
                 bufsize=0,
-                cwd=self.working_dir,
-                env=self.build_subprocess_env()
+                cwd=self.working_dir,  # Run scans from persistent workspace
+                env=self.build_subprocess_env(),
             )
 
             self.log_message("Scan process started. Monitoring progress...")
             self.log_message(f"Working directory: {self.working_dir}")
             self.log_message(f"Results directory: {self.results_dir}")
-
             # Read output in real-time with commentary
             line_count = 0
             last_update_time = time.time()
