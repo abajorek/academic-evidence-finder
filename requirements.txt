@@ -19,9 +19,9 @@ lxml==5.2.2
 icalendar==5.0.13
 python-dateutil==2.9.0
 
-# Edgar GUI with authentic retro sound effects
-pygame==2.6.1
-numpy>=1.21.0  # For clean sine wave audio generation
+# Optional desktop sound extras live in requirements-optional.txt
+# pygame==2.6.1
+# numpy>=1.21.0  # For clean sine wave audio generation
 
 # For the enhanced GUI (if we go beyond basic tkinter)
 # Pillow==10.4.0  # Uncomment if we need image processing for GUI

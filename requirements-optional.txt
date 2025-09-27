@@ -1,0 +1,3 @@
+# Optional extras for the desktop application's sound effects.
+pygame==2.6.1
+numpy>=1.21.0
