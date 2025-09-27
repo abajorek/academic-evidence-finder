@@ -14,7 +14,7 @@ Scan your computer for artifacts that support **Teaching, Service, Scholarship**
 
 ## Outputs
 - `evidence.csv` (one row per file hit)
-- `summary.csv` (counts per category/subcategory)  
+- `summary.csv` (counts per category/subcategory)
 - `report.html` (quick visual dashboard with links)
 - `pass1_categorized.json` (metadata-only analysis results)
 
@@ -87,6 +87,14 @@ open dist/Edgar.app            # Launch the bundled GUI
 
 The bundle includes all of the supporting scan scripts, configuration, and pygame assets. When you launch the packaged app, Edgar writes results to `~/EdgarEvidence/results` so the reports stick around outside the temporary app bundle.
 
+> 💡 The build script takes care of its own virtual environment and forces `pip` to download binary wheels for heavyweight dependencies like `lxml`, `numpy`, and `pygame`. That means no more hanging terminals while compiling `requirements.txt`—the resulting `Edgar.app` is a self-contained GUI with the scanners, rules, and retro sound effects baked in.
+
+For debugging or scripted runs you can ask the launcher to execute a bundled scanner directly:
+
+```bash
+python3 scripts/edgar_gui.py --run-embedded scan.py --help
+```
+
 ### Two-Pass Command Line
 ```bash
 # Quick metadata-only scan
@@ -124,7 +132,7 @@ python3 scripts/scan.py --path-list /tmp/paths.txt --out results
 The scanner recognizes these file types:
 
 **Documents**: PDF, DOCX, PPTX, TXT, DOC, RTF, ODT, Pages, Key, ODP
-**Spreadsheets**: XLSX, XLS, CSV, ODS, Numbers  
+**Spreadsheets**: XLSX, XLS, CSV, ODS, Numbers
 **Music Notation**: MUS, MUSX, SIB, FTM, FTMX, MusicXML, MXL
 **Drill Design**: 3DJ, 3DZ, 3DA, PROD (Pyware files)
 **Web/Markup**: HTML, HTM, XML, MD, TEX
@@ -146,12 +154,12 @@ categories:
         - "\\bsyllabus\\b"
         - "\\boffice hours\\b"
         - "\\bgrading policy\\b"
-        
+
   Scholarship:
     Musical_Compositions:
       any:
         - "original composition"
-        - "commissioned piece" 
+        - "commissioned piece"
         - "world premiere"
 ```
 
@@ -160,7 +168,7 @@ categories:
 ### Edgar Mode
 Add `--edgar` to any command-line scan for:
 - Animated progress indicators
-- Retro terminal styling  
+- Retro terminal styling
 - Optional sound effects
 - 80s virus scanner aesthetic
 
@@ -189,7 +197,7 @@ source,path,category,subcategory,hits,score,when
 files,/Users/me/Documents/syllabus.pdf,Teaching,Syllabi,3,5,2024-08-15
 ```
 
-### summary.csv  
+### summary.csv
 Aggregate counts by category:
 ```csv
 source,category,subcategory,count
@@ -207,7 +215,7 @@ Interactive dashboard with:
 ## Performance Tips
 
 1. **Use two-pass scanning** for large file collections
-2. **Filter by date** to focus on recent work  
+2. **Filter by date** to focus on recent work
 3. **Use Spotlight integration** on macOS for faster file discovery
 4. **Exclude unnecessary directories** in rules.yml
 5. **Run Pass 1 first** to identify relevant files
@@ -232,7 +240,7 @@ python3 scripts/edgar_gui.py  # Audio will auto-disable if pygame unavailable
 
 ### No Files Found
 - Check directory paths exist
-- Verify file extensions in rules.yml  
+- Verify file extensions in rules.yml
 - Try broader date ranges
 - Check exclude_dirs settings
 
