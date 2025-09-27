@@ -11,7 +11,7 @@ Pass 2: Full text extraction and detailed analysis
 import argparse, os, re, json, time
 from pathlib import Path
 from datetime import datetime, timezone
-from tqdm import tqdm
+from ae_finder.tqdm_compat import tqdm
 from collections import Counter, defaultdict
 
 from ae_finder import load_rules_config

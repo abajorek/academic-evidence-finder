@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from dateutil import parser as dtparse
 from icalendar import Calendar
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+from ae_finder.tqdm_compat import tqdm
 from collections import Counter
 
 from report import write_csv, write_summary, write_html
