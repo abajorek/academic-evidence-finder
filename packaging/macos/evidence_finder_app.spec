@@ -2,8 +2,6 @@
 
 import pathlib
 from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT, BUNDLE
-from PyInstaller.utils.hooks import collect_data_files
-from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.building.datastruct import Tree
 
 block_cipher = None
@@ -17,7 +15,7 @@ examples_tree = Tree(str(project_root / "examples"), prefix="examples", excludes
 # Bundle every script so that subprocess calls (scan.py, report.py, etc.) are available.
 script_tree = Tree(str(scripts_dir), prefix="embedded_scripts", excludes=["*.pyc", "__pycache__"])
 
-hiddenimports = collect_submodules("pygame") + [
+hiddenimports = [
     "numpy",
     "tkinter",
     "tkinter.filedialog",
@@ -25,13 +23,13 @@ hiddenimports = collect_submodules("pygame") + [
     "tkinter.ttk",
 ]
 
-datas = collect_data_files("pygame")
+datas = []
 datas += config_tree.toc
 datas += examples_tree.toc
 datas += script_tree.toc
 
 a = Analysis(
-    [str(scripts_dir / "edgar_gui.py")],
+    [str(scripts_dir / "evidence_finder_app.py")],
     pathex=[str(scripts_dir)],
     binaries=[],
     datas=datas,
@@ -51,7 +49,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="Edgar",
+    name="EvidenceFinder",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -71,11 +69,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name="Edgar",
+    name="EvidenceFinder",
 )
 app = BUNDLE(
     coll,
-    name="Edgar.app",
+    name="EvidenceFinder.app",
     icon=None,
-    bundle_identifier="com.academicevidence.edgar",
+    bundle_identifier="com.academicevidence.finder",
 )
