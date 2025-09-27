@@ -87,6 +87,8 @@ open dist/Edgar.app            # Launch the bundled GUI
 
 The bundle includes all of the supporting scan scripts, configuration, and pygame assets. When you launch the packaged app, Edgar writes results to `~/EdgarEvidence/results` so the reports stick around outside the temporary app bundle.
 
+> 💡 The build script takes care of its own virtual environment and forces `pip` to download binary wheels for heavyweight dependencies like `lxml`, `numpy`, and `pygame`. That means no more hanging terminals while compiling `requirements.txt`—the resulting `Edgar.app` is a self-contained GUI with the scanners, rules, and retro sound effects baked in.
+
 For debugging or scripted runs you can ask the launcher to execute a bundled scanner directly:
 
 ```bash

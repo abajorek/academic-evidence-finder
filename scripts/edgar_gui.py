@@ -101,6 +101,7 @@ class EdgarGUI:
 
         self.current_scan_process = None
         self.scanning = False
+        self.abort_requested = False
         self.selected_years = []
         self.scan_mode = "pass1"  # pass1, pass2, full
         self.selected_directories = []
@@ -255,6 +256,7 @@ class EdgarGUI:
     def reset_scan_state(self, status_message: str = "Status: READY (and hopefully wiser)"):
         """Restore the UI to an idle state after a scan finishes or aborts."""
         self.scanning = False
+        self.abort_requested = False
         self.scan_btn.config(state="normal")
         self.stop_btn.config(state="disabled")
         self.progress_var.set(status_message)
@@ -547,6 +549,7 @@ class EdgarGUI:
 
         # Update UI state
         self.scanning = True
+        self.abort_requested = False
         self.scan_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
 
@@ -568,6 +571,13 @@ class EdgarGUI:
 
     def run_scan(self):
         """Execute the actual scan process (the meat and potatoes)"""
+        final_status_message = "Status: READY (and hopefully wiser)"
+        scan_process = None
+        stdout_stream = None
+        user_aborted = False
+        line_count = 0
+        last_update_time = time.time()
+
         try:
             mode = self.mode_var.get()
             years = self.selected_years
@@ -577,11 +587,9 @@ class EdgarGUI:
             self.log_message(f"Target years: {years} (time travel engaged)")
             self.log_message(f"Directories: {len(directories)} (that's a lot of places to look)")
 
-            # Build year filter arguments
             year_start = f"{min(years)}-01-01"
             year_end = f"{max(years)}-12-31"
 
-            # Simulate scan progress with retro effects and commentary
             self.simulate_scan_progress()
 
             script_dir = self.runtime_scripts_dir
@@ -591,6 +599,7 @@ class EdgarGUI:
                 "--modified-until", year_end,
                 "--out", str(self.results_dir),
             ]
+
             if mode == "pass1":
                 self.log_message("Executing metadata-only analysis...")
                 self.log_message("This is the quick and dirty approach. Fast, but not very thorough.")
@@ -606,13 +615,11 @@ class EdgarGUI:
                 optimized_script = script_dir / "scan_optimized.py"
                 if optimized_script.exists():
                     script_name = "scan_optimized.py"
-
-            else:  # full scan
+            else:
                 self.log_message("Executing complete scan sequence...")
                 self.log_message("Full scan mode: No mercy, no prisoners.")
                 script_args.extend(["--edgar", "--edgar-interval", "0.3"])
 
-            # Add directories to command arguments
             for directory in directories:
                 script_args.extend(["--include", directory])
 
@@ -621,11 +628,10 @@ class EdgarGUI:
                 message = f"Required scan script not found: {target_script}"
                 self.log_message(message)
                 messagebox.showerror("Missing Script", message)
-                self.reset_scan_state()
+                final_status_message = "Status: ERROR (missing scan script)"
                 return
 
             cmd: List[str] = []
-
             if is_frozen_build():
                 cmd.append(sys.executable)
             else:
@@ -637,87 +643,119 @@ class EdgarGUI:
                 "--cwd",
                 str(self.working_dir),
             ])
-
             cmd.extend(script_args)
 
             self.log_message(f"Command: {' '.join(cmd)}")
             self.log_message("Here we go! Executing scan command...")
 
-            scan_start_time = time.time()  # Track scan duration
+            scan_start_time = time.time()
+            line_count = 0
+            last_update_time = scan_start_time
 
-            # Execute scan process with real-time output
             self.current_scan_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
                 bufsize=0,
-                cwd=self.working_dir,  # Run scans from persistent workspace
+                cwd=self.working_dir,
                 env=self.build_subprocess_env(),
             )
+
+            scan_process = self.current_scan_process
+            stdout_stream = scan_process.stdout
 
             self.log_message("Scan process started. Monitoring progress...")
             self.log_message(f"Working directory: {self.working_dir}")
             self.log_message(f"Results directory: {self.results_dir}")
-            # Read output in real-time with commentary
-            line_count = 0
-            last_update_time = time.time()
+
+            if stdout_stream is None:
+                self.log_message("Live scan output is unavailable; waiting for the process to finish...")
 
             while True:
-                output = self.current_scan_process.poll()
+                return_code = scan_process.poll()
 
-                # Read any available output
-                try:
-                    line = self.current_scan_process.stdout.readline()
+                if stdout_stream is not None:
+                    try:
+                        line = stdout_stream.readline()
+                    except Exception:
+                        line = ""
                     if line:
                         line_count += 1
                         self.log_message(f"[{line_count:03d}] {line.strip()}")
-
-                        # Add progress comments every 25 lines
                         if line_count % 25 == 0:
                             progress_msg = random.choice([
                                 f"Still working... {line_count} lines processed.",
                                 "Files are being analyzed. This is what progress looks like.",
                                 "The scan continues. Edgar is earning his keep.",
                                 "Processing files like it's nobody's business.",
-                                f"Line {line_count}! The numbers keep going up!"
+                                f"Line {line_count}! The numbers keep going up!",
                             ])
                             self.log_message(f"   → {progress_msg}")
+                else:
+                    time.sleep(0.2)
 
-                    # Update status periodically even without output
-                    current_time = time.time()
-                    if current_time - last_update_time > 5:  # Every 5 seconds
-                        elapsed = current_time - scan_start_time
-                        self.progress_var.set(f"Status: SCANNING... ({elapsed:.0f}s elapsed)")
+                current_time = time.time()
+                if current_time - last_update_time > 5:
+                    elapsed = current_time - scan_start_time
+                    self.progress_var.set(f"Status: SCANNING... ({elapsed:.0f}s elapsed)")
 
-                        if line_count == 0:
-                            self.log_message("   → Still initializing... (this is normal, probably)")
+                    if line_count == 0:
+                        self.log_message("   → Still initializing... (this is normal, probably)")
 
-                        last_update_time = current_time
+                    last_update_time = current_time
 
-                        # Play a little progress beep
-                        if random.random() < 0.3:
-                            self.play_beep(random.randint(600, 1000), 60)
+                    if random.random() < 0.3:
+                        self.play_beep(random.randint(600, 1000), 60)
 
-                    # Update the GUI
+                if (self.abort_requested or not self.scanning) and return_code is None:
+                    user_aborted = True
+                    self.log_message("Abort flag detected. Asking the scan to shut down...")
+                    try:
+                        scan_process.terminate()
+                    except Exception as exc:
+                        self.log_message(f"Warning: unable to terminate scan cleanly: {exc}")
+                    time.sleep(0.2)
+                    return_code = scan_process.poll()
+
+                if return_code is not None:
+                    break
+
+                try:
                     self.root.update()
-
-                except Exception as e:
-                    # No more output available right now
-                    pass
-
-                # Check if process finished
-                if output is not None:
+                except tk.TclError:
+                    user_aborted = True
                     break
 
-                # Check if user wants to stop
-                if not self.scanning:
-                    break
-
-                # Small delay to prevent busy waiting
                 time.sleep(0.1)
 
-            if self.current_scan_process.returncode == 0:
+            if scan_process is not None:
+                try:
+                    scan_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.log_message("Scan process took too long to exit. Forcing shutdown...")
+                    try:
+                        scan_process.kill()
+                    except Exception:
+                        pass
+                    scan_process.wait()
+
+            if user_aborted:
+                final_status_message = "Status: ABORTED (user got impatient)"
+                self.log_message("SCAN ABORTED BY USER")
+                self.log_message("Well, that was fun while it lasted.")
+                abort_msg = random.choice([
+                    "Scan stopped. Hope you found what you were looking for.",
+                    "Aborted! The scan has been terminated with extreme prejudice.",
+                    "User intervention detected. Stopping all the things.",
+                    "Scan cancelled. Edgar is disappointed but not surprised.",
+                    "Operation halted. The files will have to wait for another day.",
+                ])
+                self.log_message(abort_msg)
+                self.play_beep(300, 400)
+
+            elif scan_process and scan_process.returncode == 0:
+                final_status_message = "Status: READY (scan complete!)"
                 self.log_message("=" * 70)
                 self.log_message("SCAN COMPLETED SUCCESSFULLY!")
                 self.log_message("Edgar has done his job. Results are ready for inspection.")
@@ -725,34 +763,50 @@ class EdgarGUI:
                 self.log_message("You can now bask in the glory of organized evidence.")
                 self.log_message("=" * 70)
 
-                # Victory sound sequence (the triumphant fanfare)
                 for freq in [800, 1000, 1200, 1500]:
                     self.play_beep(freq, 150)
                     time.sleep(0.1)
 
-                # Random victory message
                 victory_msg = random.choice([
                     "Jorb well done! Wait, that's not a word. Job well done!",
                     "Success! The files have been successfully evidenced.",
                     "Scan complete! Time to see what we found in there.",
                     "All done! Edgar can rest easy knowing the job is finished.",
-                    "Mission accomplished! Now you can get back to more important things."
+                    "Mission accomplished! Now you can get back to more important things.",
                 ])
                 self.log_message(victory_msg)
 
             else:
+                final_status_message = "Status: ERROR (check log output)"
                 self.log_message("SCAN ERROR: Process terminated with errors")
                 self.log_message("Well, that didn't go as planned. Maybe try again?")
-                self.play_beep(300, 500)  # Error sound (ominous)
+                self.play_beep(300, 500)
 
-        except Exception as e:
-            self.log_message(f"FATAL ERROR: {str(e)}")
+        except Exception as exc:
+            final_status_message = "Status: ERROR (check log output)"
+            self.log_message(f"FATAL ERROR: {exc}")
             self.log_message("Something went horribly wrong. This is not ideal.")
-            self.play_beep(200, 800)  # Really ominous error sound
+            self.play_beep(200, 800)
 
         finally:
-            # Reset UI state
-            self.reset_scan_state()
+            if stdout_stream is not None:
+                try:
+                    stdout_stream.close()
+                except Exception:
+                    pass
+
+            if scan_process is not None:
+                try:
+                    if scan_process.poll() is None:
+                        scan_process.terminate()
+                        scan_process.wait(timeout=2)
+                except Exception:
+                    try:
+                        scan_process.kill()
+                    except Exception:
+                        pass
+
+            self.reset_scan_state(final_status_message)
 
     def simulate_scan_progress(self):
         """Simulate retro scan progress display (the theatrical part)"""
@@ -792,24 +846,25 @@ class EdgarGUI:
 
     def stop_scan(self):
         """Stop the current scan (the escape hatch)"""
-        if self.current_scan_process:
-            self.current_scan_process.terminate()
-            self.log_message("Terminating scan process...")
+        if not self.current_scan_process:
+            self.log_message("No active scan to stop. Maybe it already finished?")
+            return
 
-        self.log_message("SCAN ABORTED BY USER")
-        self.log_message("Well, that was fun while it lasted.")
-        self.play_beep(300, 400)  # Abort sound (sad trombone)
-        self.reset_scan_state("Status: ABORTED (user got impatient)")
+        if self.abort_requested:
+            self.log_message("Stop already requested. Waiting for the scan to wind down...")
+            return
 
-        # Random abort message
-        abort_msg = random.choice([
-            "Scan stopped. Hope you found what you were looking for.",
-            "Aborted! The scan has been terminated with extreme prejudice.",
-            "User intervention detected. Stopping all the things.",
-            "Scan cancelled. Edgar is disappointed but not surprised.",
-            "Operation halted. The files will have to wait for another day."
-        ])
-        self.log_message(abort_msg)
+        self.abort_requested = True
+        self.scanning = False
+        self.stop_btn.config(state="disabled")
+        self.progress_var.set("Status: ABORTING (hang tight)")
+
+        try:
+            if self.current_scan_process.poll() is None:
+                self.log_message("Stop requested by user. Attempting to terminate scan process...")
+                self.current_scan_process.terminate()
+        except Exception as exc:
+            self.log_message(f"Warning: unable to terminate scan cleanly: {exc}")
 
     def get_random_homestar_comment(self):
         """Get a random Homestar Runner-style comment"""
