@@ -8,11 +8,13 @@ Pass 2: Full text extraction and detailed analysis
                                                                   - Strong Bad, probably
 """
 
-import argparse, os, re, yaml, json, time
+import argparse, os, re, json, time
 from pathlib import Path
 from datetime import datetime, timezone
 from tqdm import tqdm
 from collections import Counter, defaultdict
+
+from ae_finder import load_rules_config
 
 class MetadataAnalyzer:
     """Fast metadata-only analysis for initial categorization"""
@@ -138,8 +140,7 @@ class TwoPassScanner:
     """Two-pass scanner: metadata first, then detailed analysis (because efficiency)"""
     
     def __init__(self, config_path):
-        with open(config_path) as f:
-            self.config = yaml.safe_load(f)
+        self.config = load_rules_config(config_path)
         self.metadata_analyzer = MetadataAnalyzer(self.config)
         
     def pass1_metadata_scan(self, file_paths, output_dir):
@@ -392,7 +393,11 @@ def main():
     parser.add_argument("--path-list", help="File with paths to scan")
     parser.add_argument("--include", nargs="*", help="Directories to scan")
     parser.add_argument("--include-file", help="File with directories to scan")  
-    parser.add_argument("--rules", default="config/rules.yml", help="Rules configuration file")
+    parser.add_argument(
+        "--rules",
+        default=str(Path(__file__).resolve().parents[1] / "config" / "rules.json"),
+        help="Rules configuration file",
+    )
     parser.add_argument("--out", default="out", help="Output directory")
     parser.add_argument("--pass1-only", action="store_true", help="Run only metadata analysis (quick survey)")
     parser.add_argument("--categories", nargs="+", default=["teaching", "service", "scholarship"], 
@@ -408,10 +413,9 @@ def main():
     
     # Initialize scanner
     scanner = TwoPassScanner(args.rules)
-    
+
     # Load configuration for file filters
-    with open(args.rules) as f:
-        config = yaml.safe_load(f)
+    config = load_rules_config(args.rules)
     
     include_exts = set([e.lower() for e in config["file_filters"]["include_extensions"]])
     if args.only_ext:
