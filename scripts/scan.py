@@ -1,12 +1,19 @@
 
-import argparse, os, re, mailbox, json, time
+import argparse, os, re, mailbox, json, time, sys
 from pathlib import Path
 from datetime import datetime, timezone
 from dateutil import parser as dtparse
 from icalendar import Calendar
 from bs4 import BeautifulSoup
-from ae_finder.tqdm_compat import tqdm
 from collections import Counter
+
+
+# Ensure the project root (which contains the ``ae_finder`` package) is importable
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from ae_finder.tqdm_compat import tqdm
 
 from report import write_csv, write_summary, write_html
 from extractors import extract_text
