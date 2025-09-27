@@ -13,7 +13,6 @@ tqdm==4.66.4
 
 # Web scraping and parsing (for email/calendar)
 beautifulsoup4==4.12.3
-lxml==5.2.2
 
 # Calendar and date handling
 icalendar==5.0.13

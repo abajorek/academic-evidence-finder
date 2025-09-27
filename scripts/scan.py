@@ -168,14 +168,18 @@ def iter_mbox(paths):
                             break
                         elif ct == "text/html" and not body:
                             htmlb = part.get_payload(decode=True) or b""
-                            body = BeautifulSoup(htmlb.decode(errors="ignore"), "lxml").get_text(" ", strip=True)
+                            body = BeautifulSoup(
+                                htmlb.decode(errors="ignore"), "html.parser"
+                            ).get_text(" ", strip=True)
                 else:
                     ct = (msg.get_content_type() or "").lower()
                     if ct == "text/plain":
                         body = (msg.get_payload(decode=True) or b"").decode(errors="ignore")
                     elif ct == "text/html":
                         htmlb = msg.get_payload(decode=True) or b""
-                        body = BeautifulSoup(htmlb.decode(errors="ignore"), "lxml").get_text(" ", strip=True)
+                        body = BeautifulSoup(
+                            htmlb.decode(errors="ignore"), "html.parser"
+                        ).get_text(" ", strip=True)
             except Exception:
                 pass
             text = "\n".join([subj, frm, to, body])
